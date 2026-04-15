@@ -1,0 +1,185 @@
+<?php
+
+declare(strict_types=1);
+
+require_once 'config.php';
+require_once 'dbh.inc.php';
+require_once 'global.model.php';
+
+/**
+ * Helper to standard JSON response.
+ */
+function sendJsonResponse(array $data, int $statusCode = 200)
+{
+    http_response_code($statusCode);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+
+/**
+ * Add To Cart
+ */
+if ($action === 'add_to_cart') {
+    $userId = $_SESSION['user_id'] ?? null;
+    $variantId = (int)($_POST['variant_id'] ?? 0);
+    $qty = (int)($_POST['qty'] ?? 1);
+    $source = $_POST['source'] ?? 'SR'; // 'SR' or 'WH'
+
+    if (!$userId) {
+        sendJsonResponse(['success' => false, 'message' => 'User not logged in'], 401);
+    }
+    if ($variantId <= 0 || $qty <= 0) {
+        sendJsonResponse(['success' => false, 'message' => 'Invalid parameters']);
+    }
+
+    $success = add_to_cart($pdo, (int)$userId, $variantId, $qty, $source);
+    if ($success) {
+        sendJsonResponse(['success' => true]);
+    } else {
+        sendJsonResponse([
+            'success' => false, 
+            'message' => 'Cannot add item. You already have some in your cart, and adding more would exceed the available stock.'
+        ]);
+    }
+}
+
+/**
+ * Update Cart Qty
+ */
+if ($action === 'update_cart_qty') {
+    $cartId = (int)($_POST['cart_id'] ?? 0);
+    $qty = (int)($_POST['qty'] ?? 0);
+    $userId = $_SESSION['user_id'] ?? null;
+
+    if (!$userId || $cartId <= 0 || $qty < 1) {
+        sendJsonResponse(['success' => false, 'message' => 'Invalid parameters']);
+    }
+
+    try {
+        // 1. Get variant details and source for this cart item
+        $cartStmt = $pdo->prepare("SELECT variant_id, source FROM cart WHERE id = ? AND user_id = ?");
+        $cartStmt->execute([$cartId, $userId]);
+        $cartItem = $cartStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$cartItem) {
+            sendJsonResponse(['success' => false, 'message' => 'Cart item not found']);
+        }
+
+        $variantId = (int)$cartItem['variant_id'];
+        $source = $cartItem['source'];
+
+        // 2. Check current available stock
+        $stockSql = ($source === 'SR') 
+            ? "SELECT qty_on_hand FROM showroom_stocks WHERE variant_id = ?"
+            : "SELECT qty_on_hand FROM warehouse_stocks WHERE variant_id = ?";
+        
+        $stockStmt = $pdo->prepare($stockSql);
+        $stockStmt->execute([$variantId]);
+        $availableStock = (int)$stockStmt->fetchColumn();
+
+        if ($qty > $availableStock) {
+            sendJsonResponse([
+                'success' => false, 
+                'message' => 'Cannot update quantity. Only ' . $availableStock . ' items left in stock.'
+            ]);
+        }
+
+        // 3. Update the cart
+        $stmt = $pdo->prepare("UPDATE cart SET qty = ? WHERE id = ? AND user_id = ?");
+        $success = $stmt->execute([$qty, $cartId, $userId]);
+        sendJsonResponse(['success' => $success]);
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    }
+}
+
+/**
+ * Delete Cart Item
+ */
+if ($action === 'delete_cart_item') {
+    $cartId = (int)($_POST['cart_id'] ?? 0);
+    $userId = $_SESSION['user_id'] ?? null;
+
+    if (!$userId || $cartId <= 0) {
+        sendJsonResponse(['success' => false, 'message' => 'Invalid parameters']);
+    }
+
+    try {
+        $stmt = $pdo->prepare("DELETE FROM cart WHERE id = ? AND user_id = ?");
+        $success = $stmt->execute([$cartId, $userId]);
+        sendJsonResponse(['success' => $success]);
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Database error']);
+    }
+}
+/**
+ * Get Cart Items
+ */
+if ($action === 'get_cart_items') {
+    $userId = $_SESSION['user_id'] ?? null;
+    if (!$userId) {
+        sendJsonResponse(['success' => false, 'message' => 'User not logged in'], 401);
+    }
+
+    $items = get_cart_items($pdo, (int)$userId);
+    sendJsonResponse(['success' => true, 'items' => $items]);
+}
+/**
+ * Search Customers (Autocomplete)
+ */
+if ($action === 'search_customers') {
+    $query = $_GET['query'] ?? '';
+    if (empty($query)) sendJsonResponse([]);
+
+    try {
+        $stmt = $pdo->prepare("SELECT id, name, contact_no, client_type, gov_branch 
+                               FROM customers 
+                               WHERE name LIKE ? 
+                               LIMIT 10");
+        $stmt->execute(['%' . $query . '%']);
+        sendJsonResponse(['success' => true, 'customers' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'Search error']);
+    }
+}
+
+/**
+ * Get Customer Transaction History
+ */
+if ($action === 'get_customer_history') {
+    $customerId = (int)($_GET['customer_id'] ?? 0);
+    $name = trim($_GET['name'] ?? '');
+
+    try {
+        if ($customerId > 0) {
+            $sql = "SELECT o.id, o.total_ammount as total_amount, o.status, o.created_at, t.or_number, t.id as transaction_id
+                    FROM orders o
+                    LEFT JOIN transactions t ON o.id = t.order_id
+                    WHERE o.customer_id = ?
+                    ORDER BY o.created_at DESC
+                    LIMIT 20";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$customerId]);
+        } elseif (!empty($name)) {
+            // Search by name in both registered customers and temp name
+            $sql = "SELECT o.id, o.total_ammount as total_amount, o.status, o.created_at, t.or_number, t.id as transaction_id
+                    FROM orders o
+                    LEFT JOIN transactions t ON o.id = t.order_id
+                    LEFT JOIN customers c ON o.customer_id = c.id
+                    WHERE LOWER(c.name) = LOWER(?) OR LOWER(o.temp_customer_name) = LOWER(?)
+                    ORDER BY o.created_at DESC
+                    LIMIT 20";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$name, $name]);
+        } else {
+            sendJsonResponse(['success' => false, 'message' => 'No ID or Name provided']);
+        }
+
+        sendJsonResponse(['success' => true, 'history' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    } catch (Exception $e) {
+        sendJsonResponse(['success' => false, 'message' => 'History fetch error: ' . $e->getMessage()]);
+    }
+}

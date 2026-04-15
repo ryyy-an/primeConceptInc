@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@utility flex-center {
+  @apply flex justify-center items-center;
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-5;
+  }
+
+  .card-look {
+    @apply bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden;
+  }
+
+  .cur-tab {
+    @apply bg-white border border-gray-300 rounded-3xl  hover:bg-red-100 transition duration-200;
+  }
+
+  .nxt-tab {
+    @apply hover:text-gray-600 hover:bg-red-50 rounded-3xl transition duration-200;
+  }
+
+  .card-style {
+    @apply border border-gray-300 rounded-2xl shadow-xl overflow-hidden bg-white transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.01];
+  }
+
+  .hover-grow {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.01];
+  }
+
+  .btn {
+    @apply rounded hover:bg-gray-200 transition-colors;
+  }
+
+  .option-btn {
+    @apply px-3 py-1 border border-gray-400 rounded text-gray-700 hover:bg-gray-100 transition-colors;
+  }
+  .option-btn.active {
+    @apply bg-gray-400 text-white border-gray-600;
+  }
+}

@@ -1,0 +1,1002 @@
+<?php
+
+declare(strict_types=1);
+
+require_once '../include/config.php';
+require_once '../include/dbh.inc.php';
+require_once '../include/session_js.php';
+require_once '../include/inc.showroom/sr.model.php';
+
+
+/** @var PDO $pdo */
+if (!isset($pdo) || !($pdo instanceof PDO)) {
+    die('Database connection not established.');
+}
+
+if (isset($_SESSION['user_id'])) {
+    // User is logged in → store values for later use
+    $username = isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : '';
+    $role = isset($_SESSION['role']) ? htmlspecialchars($_SESSION['role']) : '';
+} else {
+    // Not logged in → redirect
+    header("Location: ../../public/index.php");
+    exit;
+}
+
+// --- Tab Validation (NEW) ---
+if (isset($_GET['tab'])) {
+    $allowedTabs = ['0', '1'];
+    if (!in_array($_GET['tab'], $allowedTabs)) {
+        http_response_code(404);
+        include '../../public/404.php';
+        exit;
+    }
+}
+
+// Fetch recent activities for the notification dropdown
+$activities = get_recent_activities($pdo, 5);
+
+// Fetch counts for the stats cards
+$totalProducts = $pdo->query("SELECT COUNT(DISTINCT p.id) FROM products p JOIN product_variant pv ON p.id = pv.prod_id WHERE p.is_deleted = 0")->fetchColumn();
+$totalTransactions = $pdo->query("SELECT COUNT(*) FROM transactions")->fetchColumn();
+$pendingRequests = $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'Pending'")->fetchColumn();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime-In-Sync</title>
+    <link rel="stylesheet" href="../output.css">
+    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
+    <script src="../../public/assets/js/order.js"></script>
+    <?php include '../include/toast.php'; ?>
+
+
+    <style>
+        /* Shrink entire UI by 10% */
+        html {
+            zoom: 90%;
+        }
+    </style>
+
+</head>
+
+<body class="bg-white flex flex-col gap-6 text-gray-800 font-sans py-5 px-[100px]">
+    <?php include '../include/loading-splash.php'; ?>
+
+    <header
+        class="sticky top-0 z-40 flex h-[100px] items-center justify-between border-b border-gray-200 px-6 bg-white container">
+        <div class="flex container">
+            <a href="#" class="flex items-center gap-4">
+                <div class="h-full w-20">
+                    <img src="../../public/assets/img/primeLogo.ico" alt="Prime Concept Logo"
+                        class="h-full object-contain" />
+                </div>
+                <div>
+                    <h1 class="text-2xl font-semibold text-red-600">Prime-In-Sync</h1>
+                    <h4 class="text-base text-gray-500">Welcome, <?= htmlspecialchars($username) ?></h4>
+                </div>
+            </a>
+        </div>
+
+        <!-- Right: Role + Icons -->
+        <div class="flex items-center gap-4 justify-end w-1/2">
+            <div class="rounded-md bg-red-100 px-3 py-1 text-sm text-red-600 font-medium">
+                <?= htmlspecialchars(ucfirst($role)) ?> User
+            </div>
+
+            <div class="relative inline-block">
+                <button id="notifButton"
+                    class="flex items-center justify-center border border-gray-300 size-9 rounded-lg hover:bg-red-100 transition active:scale-95">
+                    <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                    </svg>
+                </button>
+
+                <div id="notifDropdown"
+                    class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transition-all duration-300">
+                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-tight">Recent Activity</h3>
+                    </div>
+
+                    <div id="notifList" class="overflow-y-auto transition-all duration-500 ease-in-out"
+                        style="max-height: 200px;">
+                        <div class="divide-y divide-gray-50 bg-white">
+                            <?php if (empty($activities)): ?>
+                                <div class="px-4 py-6 text-center text-gray-400 text-xs italic">
+                                    No recent activities found.
+                                </div>
+                            <?php else: ?>
+                                <?php foreach ($activities as $act): ?>
+                                    <div class="px-4 py-3 hover:bg-blue-50/50 transition-colors">
+                                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                                            <?= $act['type'] === 'request' ? 'New Request' : 'Order Approved' ?>
+                                        </p>
+                                        <div class="text-xs text-gray-700 leading-relaxed">
+                                            <?php if ($act['type'] === 'request'): ?>
+                                                <span
+                                                    class="font-bold text-gray-900"><?= htmlspecialchars($act['fname'] . ' ' . $act['lname']) ?></span>
+                                                placed a request for <span
+                                                    class="text-green-600 font-semibold"><?= $act['item_count'] ?> items</span>.
+                                            <?php else: ?>
+                                                Order <span
+                                                    class="font-bold text-gray-900">#<?= htmlspecialchars($act['ref_id']) ?></span>
+                                                for <span
+                                                    class="text-blue-600 font-semibold"><?= htmlspecialchars($act['fname'] . ' ' . $act['lname']) ?></span>
+                                                has been processed.
+                                            <?php endif; ?>
+                                        </div>
+                                        <span
+                                            class="text-[10px] text-gray-400 mt-2 block italic"><?= format_activity_time($act['timestamp']) ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <button id="viewAllBtn"
+                        class="block w-full py-3 text-center text-[11px] font-extrabold text-blue-600 bg-gray-50 hover:bg-blue-100 border-t border-gray-100 transition-all uppercase tracking-widest">
+                        View All Notifications
+                    </button>
+                </div>
+            </div>
+
+
+            <!-- Logout -->
+            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
+                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+                <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+                </svg>
+                <span class="text-sm text-red-600 font-medium">Logout</span>
+            </a>
+
+            <?php include '../include/logout-modal.php'; ?>
+
+        </div>
+    </header>
+
+    <section class="px-6 py-4">
+        <div class="grid grid-cols-[repeat(3,400px)] justify-center gap-5">
+            <!-- Card 1 -->
+            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
+                <div class="text-sm uppercase tracking-wide text-gray-500">Available Products</div>
+                <div class="text-4xl font-bold text-gray-800"><?= number_format((float)$totalProducts) ?></div>
+                <div class="text-sm text-gray-600">Total products in the catalog.</div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
+                <div class="text-sm uppercase tracking-wide text-gray-500">Total Transactions</div>
+                <div class="text-4xl font-bold text-gray-800"><?= number_format((float)$totalTransactions) ?></div>
+                <div class="text-sm text-gray-600">Total completed transactions recorded.</div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="flex flex-col justify-between bg-white border border-gray-300 rounded-lg shadow h-[180px] p-6">
+                <div class="text-sm uppercase tracking-wide text-gray-500">Pending Request</div>
+                <div class="text-4xl font-bold text-red-600"><?= number_format((float)$pendingRequests) ?></div>
+                <div class="text-sm text-gray-600">Current pending order requests.</div>
+            </div>
+
+        </div>
+    </section>
+
+    <nav class="px-5 flex justify-center">
+        <div class="max-w-7xl w-full">
+            <ul class="grid grid-cols-3 bg-gray-100 rounded-3xl h-12 shadow-sm px-5 items-center gap-2">
+
+                <!-- Order Products -->
+                <li>
+                    <a href="home-page.php"
+                        class="flex items-center justify-center gap-2 h-10 px-4 text-red-600 font-semibold border-b-2 border-red-600">
+                        <svg class="w-5 h-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 
+                     1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 
+                     1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 
+                     1 5.513 7.5h12.974c.576 0 1.059.435 1.119 
+                     1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 
+                     .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 
+                     1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
+                        <span>Order Products</span>
+                    </a>
+                </li>
+
+                <!-- Transaction History -->
+                <li>
+                    <a href="transaction-history.php"
+                        class="flex items-center justify-center gap-2 h-10 px-4 text-gray-700 font-medium hover:text-red-600 transition">
+                        <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3M3.22302 14C4.13247 18.008 7.71683 21 
+                     12 21c4.9706 0 9-4.0294 9-9 0-4.97056-4.0294-9-9-9-3.72916 
+                     0-6.92858 2.26806-8.29409 5.5M7 9H3V5" />
+                        </svg>
+                        <span>Transaction History</span>
+                    </a>
+                </li>
+
+                <!-- My Order Requests -->
+                <li>
+                    <a href="order-req-page.php"
+                        class="flex items-center justify-center gap-2 h-10 px-4 text-gray-700 font-medium hover:text-red-600 transition">
+                        <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 
+                     4.242 0 1.172 1.025 1.172 2.687 0 
+                     3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 
+                     1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 
+                     1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                        </svg>
+                        <span>My Order Requests</span>
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+    </nav>
+
+
+    <!-- Product Tabs -->
+    <div class="w-full px-5 flex flex-col gap-5">
+
+        <?php
+        $activeTab = isset($_GET['tab']) ? (int) $_GET['tab'] : 0;
+        $cartItems = get_cart_items($pdo, (int) ($_SESSION['user_id'] ?? 0));
+        $totalCartItems = count($cartItems);
+        ?>
+
+        <div class="flex flex-center w-full">
+            <div class="flex-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-312.5">
+                <!-- Product Catalog Tab -->
+                <button onclick="refreshAndShowTab(0)" id="tabBtn0"
+                    class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
+                    <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span>Product Catalog</span>
+                </button>
+
+                <!-- Product Cart Tab -->
+                <button onclick="refreshAndShowTab(1)" id="tabBtn1"
+                    class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl text-gray-700 font-medium hover:bg-red-100 transition">
+
+                    <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                    </svg>
+
+                    <span>Product Cart</span>
+
+                    <span id="cart-badge-showroom"
+                        class="cart-badge <?= $totalCartItems > 0 ? 'flex' : 'hidden' ?> absolute top-0 right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 items-center justify-center rounded-full shadow-md border-2 border-white transform translate-x-1/2 -translate-y-1/2 transition-all duration-300">
+                        <?= $totalCartItems ?>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Catalog -->
+        <div class="flex flex-center w-full">
+            <div class="border border-gray-300 rounded-2xl p-12 gap w-312.5">
+
+                <div id="tabContent0">
+                    <h2 class="text-2xl font-semibold mb-2">Product Catalog</h2>
+                    <p class="text-gray-600">Browse and add products to your order.</p>
+
+                    <!-- Searchbox -->
+                    <div class="relative w-full flex flex-row items-center gap-4 mt-5 mb-5">
+
+                        <div class="relative flex-grow h-11 group">
+                            <div
+                                class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-red-500 transition-colors">
+                                <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                </svg>
+                            </div>
+
+                            <input id="searchInput"
+                                class="w-full h-full bg-gray-100 border border-gray-300 rounded-xl pl-11 pr-16 outline-none text-md text-black placeholder-gray-500 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm"
+                                type="text" placeholder="Search products..." />
+
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-2">
+                                <div class="h-6 w-[1.5px] bg-gray-300 mx-2 opacity-60"></div>
+
+                                <div class="relative inline-block text-left">
+                                    <button type="button" onclick="toggleFilterMenu(event)"
+                                        class="flex items-center justify-center w-9 h-9  text-gray-500 hover:text-red-600 active:scale-90 transition-all cursor-pointer">
+                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                            viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                                        </svg>
+                                    </button>
+
+                                    <div id="filterMenu"
+                                        class="hidden absolute left-1/2 -translate-x-1/2 mt-3 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden ring-1 ring-black/5">
+                                        <div class="py-1">
+                                            <button onclick="selectFilter('all')"
+                                                class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all">
+                                                <span
+                                                    class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📍</span>
+                                                <span class="font-medium">General</span>
+                                            </button>
+                                            <button onclick="selectFilter('warehouse')"
+                                                class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
+                                                <span
+                                                    class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📦</span>
+                                                <span class="font-medium">Warehouse</span>
+                                            </button>
+                                            <button onclick="selectFilter('showroom')"
+                                                class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
+                                                <span
+                                                    class="mr-3 opacity-70 group-hover:scale-110 transition-transform">🏢</span>
+                                                <span class="font-medium">Showroom</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
+                        <?php
+                        $productsRaw = get_inventory_cards($pdo);
+                        $inStock = [];
+                        $outOfStock = [];
+                        foreach ($productsRaw as $pid => $p) {
+                            if ($p['overall'] > 0) {
+                                $inStock[$pid] = $p;
+                            } else {
+                                $outOfStock[$pid] = $p;
+                            }
+                        }
+                        $products = $inStock + $outOfStock;
+
+                        if (empty($products)): ?>
+                            <p class="text-gray-500">No products available.</p>
+                        <?php else: ?>
+                            <?php foreach ($products as $pid => $p):
+                                $encodedProduct = rawurlencode(json_encode($p));
+                            ?>
+                                <div class="card-style p-6 border border-gray-200 rounded-2xl bg-white shadow-sm relative h-full flex flex-col hover:shadow-md transition-all duration-300 product-card"
+                                    data-name="<?= htmlspecialchars(strtolower($p['name'])) ?>" data-wh="<?= $p['total_wh'] ?>"
+                                    data-sr="<?= $p['total_sr'] ?>">
+
+                                    <?php if ($p['overall'] <= 0): ?>
+                                        <div
+                                            class="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-20 rounded-2xl flex items-center justify-center pointer-events-none">
+                                            <div
+                                                class="border-4 border-gray-300 text-gray-500 font-black px-6 py-2 rounded-lg transform -rotate-12 shadow-sm text-xl tracking-widest uppercase bg-white/90">
+                                                Out of Stock
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="relative">
+                                        <!-- Badges -->
+                                        <div class="absolute inset-x-0 top-0 flex justify-between items-start z-10 pointer-events-none">
+                                            <?php if (isset($p['is_on_sale']) && $p['is_on_sale']): ?>
+                                                <span
+                                                    class="bg-yellow-400 text-black text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm pointer-events-auto">
+                                                    <?= $p['discount'] ?>% OFF
+                                                </span>
+                                            <?php else: ?>
+                                                <div></div>
+                                            <?php endif; ?>
+
+                                            <?php if ($p['overall'] > 0 && $p['overall'] <= 5): ?>
+                                                <span
+                                                    class="bg-red-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm pointer-events-auto">
+                                                    Low Stock
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="w-full h-48 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-4">
+                                            <img src="<?= htmlspecialchars($p['image']) ?>"
+                                                onerror="this.onerror=null; this.src='<?= htmlspecialchars($p['placeholder']) ?>';"
+                                                alt="<?= htmlspecialchars($p['name']) ?>"
+                                                class="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-500">
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 grow">
+                                        <h2 class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">
+                                            <?= htmlspecialchars($p['code']) ?>
+                                        </h2>
+
+                                        <div class="flex justify-between items-start mt-2">
+                                            <h1 class="text-xl font-extrabold text-gray-900 leading-tight">
+                                                <?= htmlspecialchars($p['name']) ?>
+                                            </h1>
+
+                                            <div class="text-right">
+                                                <p class="text-xl font-black text-green-600 leading-none">
+                                                    <?= $p['overall'] ?> <span
+                                                        class="text-[10px] font-bold text-gray-400 uppercase">Qty</span>
+                                                </p>
+                                                <div class="flex gap-1 mt-1.5 justify-end">
+                                                    <span
+                                                        class="bg-blue-50 text-blue-700 text-[8px] px-1.5 py-0.5 rounded border border-blue-100 font-bold uppercase">WH:
+                                                        <?= $p['total_wh'] ?></span>
+                                                    <span
+                                                        class="bg-orange-50 text-orange-700 text-[8px] px-1.5 py-0.5 rounded border border-orange-100 font-bold uppercase">SR:
+                                                        <?= $p['total_sr'] ?></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p class="text-xs text-gray-500 line-clamp-2 italic leading-relaxed h-8 mt-2">
+                                            <?= htmlspecialchars($p['desc']) ?>
+                                        </p>
+
+                                        <div class="pt-3 border-t border-gray-100">
+                                            <h3 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Inventory
+                                                Per Variant</h3>
+
+                                            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                                <?php foreach ($p['variants'] as $v): ?>
+                                                    <div
+                                                        class="shrink-0 w-24 bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-white transition-colors">
+                                                        <p class="text-[9px] font-bold text-gray-600 truncate">
+                                                            <?= htmlspecialchars($v['name']) ?>
+                                                        </p>
+                                                        <div class="flex justify-between mt-1 text-[9px] font-black italic">
+                                                            <span class="text-blue-500">W: <?= $v['wh'] ?></span>
+                                                            <span class="text-orange-500">S: <?= $v['sr'] ?></span>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-3 flex justify-between items-end border-t border-gray-50">
+                                        <div class="flex flex-col">
+                                            <?php if (isset($p['is_on_sale']) && $p['is_on_sale']):
+                                                $discountedPrice = $p['price'] - ($p['price'] * ($p['discount'] / 100));
+                                            ?>
+                                                <span class="text-[10px] text-gray-400 line-through font-bold leading-none mb-1">
+                                                    ₱<?= number_format($p['price'], 2) ?>
+                                                </span>
+                                                <h1 class="text-2xl font-black text-gray-900 tracking-tighter leading-none">
+                                                    ₱<?= number_format($discountedPrice, 2) ?>
+                                                </h1>
+                                            <?php else: ?>
+                                                <h2 class="text-[9px] text-gray-400 uppercase font-bold tracking-tighter leading-none">
+                                                    Price</h2>
+                                                <h1 class="text-2xl font-black text-gray-900 tracking-tighter leading-none mt-1">
+                                                    ₱<?= number_format($p['price'], 2) ?>
+                                                </h1>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="text-right">
+                                            <span class="text-[9px] text-gray-400 uppercase font-bold tracking-tighter block mb-1">Category</span>
+                                            <span class="text-[11px] font-extrabold text-gray-900 bg-gray-100 px-2 py-0.5 rounded uppercase"><?= htmlspecialchars($p['category']) ?></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5 flex gap-2 relative z-20">
+                                        <?php if ($p['overall'] <= 0): ?>
+                                            <button disabled
+                                                class="flex-1 py-3 bg-gray-100 border-2 border-gray-100 rounded-xl font-bold text-gray-400 cursor-not-allowed uppercase tracking-widest text-[11px]">
+                                                Out of Stock
+                                            </button>
+                                        <?php else: ?>
+                                            <button onclick="openProductModal('<?= $encodedProduct ?>')"
+                                                class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">
+                                                Add to Cart
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <div id="posNoResults" class="hidden flex-col items-center justify-center py-20 text-center w-full">
+                        <div class="bg-gray-50 p-6 rounded-full mb-4">
+                            <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z">
+                                </path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800">No products found</h3>
+                        <p class="text-sm text-gray-500">We couldn't find anything matching your search or filter.</p>
+                    </div>
+
+                    <!-- Product Card Modals -->
+                    <!-- View Card Modal -->
+                    <div id="addToCartModal"
+                        class="fixed inset-0 z-60 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+                        <div class="absolute inset-0 bg-black/40 backdrop"></div>
+
+                        <div
+                            class="modal-box relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-fit max-h-[90vh] transition-all duration-300 font-sans">
+
+                            <div
+                                class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+                                <div>
+                                    <h3 class="text-lg font-black text-gray-900 tracking-tight">Confirm Selection</h3>
+                                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Item
+                                        Code: <span class="text-black" id="modalProductCode">EC-001</span></p>
+                                </div>
+                                <button onclick="closeModal('addToCartModal')"
+                                    class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"
+                                            stroke-linejoin="round"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
+
+                                <div
+                                    class="flex items-center justify-between bg-gray-50/50 p-5 rounded-3xl border border-gray-100">
+                                    <div class="flex items-center gap-5">
+                                        <div
+                                            class="w-20 h-20 bg-white rounded-2xl border border-gray-200 shrink-0 p-2 shadow-sm">
+                                            <img id="modalMainImg"
+                                                src="../../public/assets/img/furnitures/default-placeholder.png"
+                                                class="object-contain w-full h-full transition-all duration-300">
+                                        </div>
+                                        <div>
+                                            <h1 id="modalName"
+                                                class="text-xl font-black text-gray-900 leading-none tracking-tight">
+                                                Executive Chair</h1>
+                                            <h2 id="modalPrice"
+                                                class="text-xl font-black text-blue-600 mt-2 tracking-tight">₱8,500.00
+                                            </h2>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right border-l-2 border-gray-100 pl-6 shrink-0">
+                                        <span
+                                            class="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Overall
+                                            Stock</span>
+                                        <div class="flex items-baseline justify-end gap-1">
+                                            <span id="overallStock"
+                                                class="text-3xl font-black text-gray-900 leading-none tracking-tighter">42</span>
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase">pcs</span>
+                                        </div>
+                                        <span
+                                            class="block text-[8px] font-bold text-green-500 uppercase mt-1 italic tracking-tighter">Available
+                                            in PIS</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-blue-50/40 rounded-2xl p-4 border border-blue-100/50 mt-4">
+                                    <label
+                                        class="block text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1.5 ml-1">Variant
+                                        Description</label>
+                                    <p id="variantDesc"
+                                        class="text-xs font-medium text-gray-600 leading-relaxed italic">
+                                        Select a variant to view specific material details and finish descriptions.
+                                    </p>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <label
+                                        class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">1.
+                                        Select Variant</label>
+                                    <div id="variant-list" class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer group">
+                                            <input type="radio" name="variant" value="Matte Black"
+                                                data-img="../../public/assets/img/furnitures/default-placeholder.png"
+                                                data-desc="Smooth matte black finish with scratch-resistant coating."
+                                                class="hidden peer" checked onchange="updateVariantDetails(this)">
+
+                                            <div
+                                                class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
+
+                                                <div class="flex items-center gap-3">
+                                                    <div
+                                                        class="w-10 h-10 bg-white rounded-xl border border-gray-100 p-1.5 shrink-0 shadow-sm">
+                                                        <img src="../../public/assets/img/furnitures/default-placeholder.png"
+                                                            class="object-contain w-full h-full">
+                                                    </div>
+                                                    <div class="flex flex-col">
+                                                        <span
+                                                            class="text-[11px] font-black text-gray-800 uppercase leading-none tracking-tight">Matte
+                                                            Black</span>
+                                                        <span
+                                                            class="text-[8px] font-bold text-gray-400 uppercase mt-1">Variant</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="text-right border-l border-gray-100 pl-3 shrink-0">
+                                                    <span
+                                                        class="block text-[11px] font-black text-gray-900 leading-none">12</span>
+                                                    <span
+                                                        class="text-[7px] font-black text-blue-500 uppercase tracking-tighter">Stocks</span>
+                                                </div>
+                                            </div>
+                                        </label>
+
+                                        <label class="cursor-pointer group">
+                                            <input type="radio" name="variant" value="Wood Finish"
+                                                data-img="../../public/assets/img/furnitures/default-placeholder.png"
+                                                data-desc="Natural oak wood texture with a polished protective seal."
+                                                class="hidden peer" onchange="updateVariantDetails(this)">
+
+                                            <div
+                                                class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
+                                                <div class="flex items-center gap-3">
+                                                    <div
+                                                        class="w-10 h-10 bg-white rounded-xl border border-gray-100 p-1.5 shrink-0 shadow-sm">
+                                                        <img src="../../public/assets/img/furnitures/default-placeholder.png"
+                                                            class="object-contain w-full h-full">
+                                                    </div>
+                                                    <div class="flex flex-col">
+                                                        <span
+                                                            class="text-[11px] font-black text-gray-800 uppercase leading-none tracking-tight">Wood
+                                                            Finish</span>
+                                                        <span
+                                                            class="text-[8px] font-bold text-gray-400 uppercase mt-1">Variant</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="text-right border-l border-gray-100 pl-3 shrink-0">
+                                                    <span
+                                                        class="block text-[11px] font-black text-gray-900 leading-none">8</span>
+                                                    <span
+                                                        class="text-[7px] font-black text-blue-500 uppercase tracking-tighter">Stocks</span>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                                    <div class="space-y-3">
+                                        <label
+                                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">2.
+                                            Item Source</label>
+                                        <div class="space-y-2">
+                                            <label class="cursor-pointer block">
+                                                <input type="radio" name="source" value="SR" class="hidden peer"
+                                                    checked>
+                                                <div
+                                                    class="px-4 py-2.5 border-2 border-gray-100 rounded-xl peer-checked:border-black peer-checked:bg-black peer-checked:text-white transition-all flex justify-between items-center">
+                                                    <span
+                                                        class="text-[10px] font-black uppercase tracking-tight">Showroom</span>
+                                                    <span
+                                                        class="text-[9px] font-bold text-orange-500 peer-checked:text-orange-300">1
+                                                        Stock</span>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer block">
+                                                <input type="radio" name="source" value="WH" class="hidden peer">
+                                                <div
+                                                    class="px-4 py-2.5 border-2 border-gray-100 rounded-xl peer-checked:border-black peer-checked:bg-black peer-checked:text-white transition-all flex justify-between items-center">
+                                                    <span
+                                                        class="text-[10px] font-black uppercase tracking-tight">Warehouse</span>
+                                                    <span
+                                                        class="text-[9px] font-bold text-blue-500 peer-checked:text-blue-300">3
+                                                        Stock</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-3">
+                                        <label
+                                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">3.
+                                            Quantity</label>
+                                        <div
+                                            class="flex items-center bg-gray-50 border-2 border-gray-100 rounded-xl p-1.5 h-12">
+                                            <button onclick="changeQty(-1)"
+                                                class="w-10 h-full bg-white rounded-lg font-black hover:bg-gray-100 transition-colors shadow-sm text-sm">-</button>
+                                            <input type="number" id="cartQty" value="1" min="1"
+                                                class="flex-1 bg-transparent text-center font-black text-lg outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                                            <button onclick="changeQty(1)"
+                                                class="w-10 h-full bg-white rounded-lg font-black hover:bg-gray-100 transition-colors shadow-sm text-sm">+</button>
+                                        </div>
+                                        <p
+                                            class="text-[9px] text-center text-gray-400 font-bold uppercase tracking-tighter italic">
+                                            Check stock before adding</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-5 border-t border-gray-100 flex gap-3 shrink-0">
+                                <button type="button" onclick="closeModal('addToCartModal')"
+                                    class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
+                                <button type="button" onclick="handleAddToCart()"
+                                    class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">Add
+                                    to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- end of tab1 -->
+
+                <div id="tabContent1" class="hidden ">
+                    <div class="flex flex-col gap-5">
+                        <div>
+                            <h2 class="text-2xl font-semibold mb-2">Product Cart</h2>
+                            <p class="text-gray-600">Review items before submitting your order.</p>
+                        </div>
+
+                        <div class="overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        <th class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Source</th>
+                                        <th class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Details</th>
+                                        <th class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Quantity</th>
+                                        <th class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Subtotal</th>
+                                        <th class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <?php
+                                    $cartSubtotal = 0;
+                                    if (empty($cartItems)): ?>
+                                        <tr>
+                                            <td colspan="5" class="px-6 py-20">
+                                                <div class="flex flex-col items-center justify-center text-center">
+                                                    <div class="bg-gray-50 p-6 rounded-full mb-4">
+                                                        <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <h3 class="text-lg font-bold text-gray-800">No item is in the cart yet</h3>
+                                                    <p class="text-[11px] text-gray-500 max-w-[200px] mt-1">Browse the product catalog to add items to your cart.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <?php else:
+                                        foreach ($cartItems as $cItem):
+                                            $itemTotal = $cItem['price'] * $cItem['qty'];
+                                            $cartSubtotal += $itemTotal;
+                                            $srcBadge = $cItem['source'] === 'SR' ? 'bg-red-600' : 'bg-gray-800';
+                                            $srcLabel = $cItem['source'] === 'SR' ? 'Showroom' : 'Warehouse';
+                                        ?>
+                                            <tr class="group hover:bg-gray-50/50 transition-colors">
+                                                <td class="px-6 py-4 text-center">
+                                                    <span class="<?= $srcBadge ?> text-white text-[8px] px-2 py-1 rounded-md font-black shadow-sm border border-white uppercase italic">
+                                                        <?= $cItem['source'] ?>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="w-12 h-12 bg-gray-50 rounded-lg border border-gray-100 shrink-0 p-1.5">
+                                                            <img src="<?= htmlspecialchars($cItem['image']) ?>" class="object-contain w-full h-full">
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <h4 class="text-sm font-bold text-gray-900 leading-tight truncate">
+                                                                <?= htmlspecialchars($cItem['name']) ?>
+                                                            </h4>
+                                                            <p class="text-[9px] font-bold text-gray-500 uppercase tracking-tight mt-0.5">
+                                                                <?= htmlspecialchars($cItem['variant']) ?> &bull; <?= $srcLabel ?>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center justify-center">
+                                                        <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100 h-8">
+                                                            <button onclick="updateCartItem(<?= $cItem['cart_id'] ?>, <?= $cItem['qty'] - 1 ?>, <?= $cItem['available_stock'] ?>)"
+                                                                class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">-</button>
+                                                            <span class="px-3 text-xs font-black text-gray-800"><?= $cItem['qty'] ?></span>
+                                                            <button onclick="updateCartItem(<?= $cItem['cart_id'] ?>, <?= $cItem['qty'] + 1 ?>, <?= $cItem['available_stock'] ?>)"
+                                                                class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">+</button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 text-right">
+                                                    <span class="text-sm font-black text-gray-900">₱<?= number_format($itemTotal, 2) ?></span>
+                                                </td>
+                                                <td class="px-6 py-4 text-center">
+                                                    <button onclick="removeCartItem(<?= $cItem['cart_id'] ?>)"
+                                                        class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer group-hover:scale-110 active:scale-95">
+                                                        <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                        </svg>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                    <?php endforeach;
+                                    endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <?php if (!empty($cartItems)): ?>
+                            <div class="mt-4 pt-6 border-t border-gray-100 space-y-4">
+                                <div class="flex justify-between items-center px-1">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estimated
+                                        Total</span>
+                                    <span
+                                        class="text-xl font-bold text-red-600">₱<?= number_format($cartSubtotal ?? 0, 2) ?></span>
+                                </div>
+
+                                <div class="px-1">
+                                    <button type="button" onclick="openProceedModal('reviewCartModal')"
+                                        class="group w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center gap-3">
+                                        <span class="text-[11px] font-bold uppercase tracking-[0.2em]">Place Order
+                                            Request</span>
+                                        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                        </svg>
+                                    </button>
+
+                                    <p
+                                        class="text-center text-[9px] font-bold text-gray-400 uppercase tracking-tighter mt-4 leading-relaxed">
+                                        By processing, you are updating the <br>
+                                        <span class="text-gray-900 italic">Prime-In-Sync Inventory Ledger</span>
+                                    </p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Order Proceed Modal -->
+                    <div id="reviewCartModal"
+                        class="fixed inset-0 z-100 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+                        <div class="absolute inset-0 bg-black/60"></div>
+
+                        <div class="modal-box relative bg-white w-full max-w-4xl h-fit max-h-[90vh] rounded-xl shadow-2xl overflow-hidden flex flex-col font-sans border border-gray-200">
+
+                            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-1 h-8 bg-red-600 rounded-full"></div>
+                                    <div>
+                                        <h2 class="text-xl font-bold text-gray-800 tracking-tight">Place Order Request</h2>
+                                        <p class="text-[10px] text-gray-400 uppercase font-black tracking-widest">Order Processing & Billing</p>
+                                    </div>
+                                </div>
+
+                                <button onclick="closeProceedModal('reviewCartModal')"
+                                    class="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+
+                                <section class="space-y-2">
+                                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Client Name</label>
+                                    <input type="text" id="clientName" placeholder="Search or enter name..."
+                                        class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:border-red-500 transition-all placeholder:text-gray-300 text-sm">
+                                </section>
+
+                                <section class="space-y-3">
+                                    <div class="flex items-center justify-between px-1">
+                                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order Summary</h3>
+                                        <span id="summaryItemCount" class="bg-gray-100 text-gray-600 text-[10px] px-3 py-1 rounded-full font-black uppercase">0 Items</span>
+                                    </div>
+
+                                    <div class="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                                        <table class="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr class="bg-gray-50/80 border-b border-gray-100">
+                                                    <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase">Product Details</th>
+                                                    <th class="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase">Qty</th>
+                                                    <th class="px-6 py-4 text-right text-[10px] font-black text-gray-400 uppercase">Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="summaryTableBody" class="divide-y divide-gray-100">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Grand Total</p>
+                                    <h1 id="summaryGrandTotal" class="text-3xl font-black text-gray-900 tracking-tighter">₱0.00</h1>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <button onclick="closeProceedModal('reviewCartModal')"
+                                        class="py-4 px-8 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">
+                                        Cancel
+                                    </button>
+                                    <button id="placeRequestBtn" onclick="submitOrderRequest()"
+                                        class="bg-red-600 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200/50 active:scale-95">
+                                        Place Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <!-- end of tab2 -->
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop" onclick="closeModal('customAlertModal')"></div>
+        <div
+            class="modal-box relative bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 font-sans p-6 text-center">
+            <div
+                class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-red-50 mb-4 ring-8 ring-red-50/50">
+                <svg class="h-7 w-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Notice</h3>
+            <div class="mt-2 text-sm font-medium text-gray-500 mb-6" id="customAlertMessage">
+                Message goes here.
+            </div>
+            <button onclick="closeModal('customAlertModal')"
+                class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-red-600 text-sm font-bold text-white hover:bg-red-700 transition-colors">
+                Okay, got it!
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirmModal"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop" onclick="closeModal('customConfirmModal')"></div>
+        <div
+            class="modal-box relative bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 font-sans p-6 text-center">
+            <div
+                class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-orange-50 mb-4 ring-8 ring-orange-50/50">
+                <svg class="h-7 w-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Confirmation</h3>
+            <div class="mt-2 text-sm font-medium text-gray-500 mb-6" id="customConfirmMessage">
+                Message goes here.
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeModal('customConfirmModal')"
+                    class="w-full inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button id="customConfirmBtn"
+                    class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-gray-900 text-sm font-bold text-white hover:bg-black transition-colors">
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>
