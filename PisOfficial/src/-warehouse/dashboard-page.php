@@ -34,8 +34,8 @@ if (isset($_SESSION['user_id'])) {
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js" defer></script>
-    <script src="../../public/assets/js/warehouse.js" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
+    <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
 
     <style>
         /* Shrink entire UI by 10% */
@@ -94,7 +94,6 @@ if (isset($_SESSION['user_id'])) {
                 <span class="text-sm text-red-600 font-medium">Logout</span>
             </a>
 
-            <?php include '../include/logout-modal.php'; ?>
         </div>
     </header>
 

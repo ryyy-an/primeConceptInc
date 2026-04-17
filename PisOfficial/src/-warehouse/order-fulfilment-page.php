@@ -44,7 +44,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
     <title>Prime-In-Sync</title>
     <link rel="icon" href="../../public/assets/img/primeLogo.ico" type="image/x-icon">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
 
     <style>
         /* Global UI Tweaks */
@@ -125,7 +125,6 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
                 <span class="text-sm text-red-600 font-medium">Logout</span>
             </a>
 
-            <?php include '../include/logout-modal.php'; ?>
         </div>
     </header>
 
@@ -481,8 +480,9 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         // Export data for the external fulfillment script
         window.mockOrders = <?= json_encode($fulfillmentOrders) ?>;
     </script>
-    <script src="../../public/assets/js/warehouse.js" defer></script>
+    <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
     <script src="../../public/assets/js/warehouse-fulfillment.js" defer></script>
+    <?php include '../include/logout-modal.php'; ?>
 </body>
 
 </html>

@@ -63,8 +63,8 @@ $logs = get_warehouse_logs($pdo, $filters, $limit, $offset);
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js" defer></script>
-    <script src="../../public/assets/js/warehouse.js" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
+    <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
 
     <style>
         /* Shrink entire UI by 10% */
@@ -121,7 +121,6 @@ $logs = get_warehouse_logs($pdo, $filters, $limit, $offset);
                 <span class="text-sm text-red-600 font-medium">Logout</span>
             </a>
 
-            <?php include '../include/logout-modal.php'; ?>
         </div>
     </header>
 
@@ -338,6 +337,7 @@ $logs = get_warehouse_logs($pdo, $filters, $limit, $offset);
     </section>
 
 
+    <?php include '../include/logout-modal.php'; ?>
 </body>
 
 </html>
