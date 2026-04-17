@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 14, 2026 at 07:31 PM
+-- Generation Time: Apr 17, 2026 at 01:38 PM
 -- Server version: 10.4.18-MariaDB
 -- PHP Version: 8.0.3
 
@@ -34,6 +34,14 @@ CREATE TABLE `cart` (
   `qty` int(11) NOT NULL,
   `source` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `cart`
+--
+
+INSERT INTO `cart` (`id`, `user_id`, `variant_id`, `qty`, `source`) VALUES
+(21, 2, 30, 1, 'WH'),
+(23, 2, 31, 1, 'WH');
 
 -- --------------------------------------------------------
 
@@ -76,34 +84,28 @@ CREATE TABLE `customers` (
 
 INSERT INTO `customers` (`id`, `name`, `contact_no`, `client_type`, `gov_branch`, `created_at`) VALUES
 (1, 'Christian Villanueva', '0929702', 'private', 'null', '2026-04-13 10:55:31'),
-(3, 'Christian Villanueva', '', 'undefined', 'null', '2026-04-13 17:18:39');
+(5, 'Pedro Penduco', '09987654321', 'Private / Individual', 'null', '2026-04-15 15:11:28'),
+(6, 'Christian Villanueva', '09123456789', 'government', 'Department of Education', '2026-04-15 15:13:51'),
+(7, 'Dave Mclarry', '09123456789', 'Private / Individual', 'null', '2026-04-15 15:43:29');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `notification`
+-- Table structure for table `notifications`
 --
 
-CREATE TABLE `notification` (
+CREATE TABLE `notifications` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `title` varchar(255) DEFAULT NULL,
-  `message` text DEFAULT NULL,
-  `type` varchar(50) DEFAULT NULL,
+  `target_user_id` int(11) DEFAULT NULL,
+  `target_role` varchar(20) DEFAULT NULL,
+  `sender_id` int(11) DEFAULT NULL,
+  `type` varchar(50) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `message` text NOT NULL,
+  `link` varchar(255) DEFAULT NULL,
   `is_read` tinyint(1) DEFAULT 0,
-  `link_id` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `notification`
---
-
-INSERT INTO `notification` (`id`, `user_id`, `title`, `message`, `type`, `is_read`, `link_id`, `created_at`) VALUES
-(1, 4, 'Order Request Approved', 'Order #5 has been Approved. Admin Note: sdfdfsgre', 'order', 0, '5', '2026-04-13 11:10:21'),
-(2, 4, 'Order Request Approved', 'Order #9 has been Approved. Admin Note: asfsdf', 'order', 0, '9', '2026-04-13 17:19:40'),
-(3, 4, 'Order Request Approved', 'Order #10 has been Approved. Admin Note: No additional remarks.', 'order', 0, '10', '2026-04-14 03:53:42'),
-(4, 4, 'Order Request Approved', 'Order #11 has been Approved. Admin Note: No additional remarks.', 'order', 0, '11', '2026-04-14 04:10:25');
 
 -- --------------------------------------------------------
 
@@ -128,6 +130,19 @@ CREATE TABLE `orders` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `created_by`, `status`, `wh_status`, `customer_id`, `temp_customer_name`, `shipping_type`, `delivery_address`, `payment_mode`, `admin_discount`, `total_ammount`, `balance`, `comments`, `created_at`) VALUES
+(12, 7, 'For Review', 'Pending', NULL, 'Pedro Penduco', NULL, NULL, NULL, 0, 12500.00, 12500.00, NULL, '2026-04-13 16:00:00'),
+(21, 7, 'Cancelled', 'Pending', NULL, 'Dave Mclarry', NULL, NULL, NULL, 0, 12500.00, 12500.00, '', '2026-04-13 16:00:00'),
+(22, 7, 'Success', 'To Release', 5, 'Pedro Penduco', 'pickup', '', 'eWallet', 0, 12500.00, 0.00, '', '2026-04-14 16:00:00'),
+(23, 7, 'Success', 'To Release', 7, 'Dave Mclarry', 'pickup', '', 'eWallet', 0, 25000.00, 0.00, '', '2026-04-14 16:00:00'),
+(25, 2, 'For Review', 'To Release', 6, 'Christian Villanueva', 'delivery', 'Pagsanjan, Laguna', 'cash', 0, 12500.00, 0.00, '', '2026-04-15 15:13:51'),
+(26, 2, 'For Review', 'To Release', 6, 'Christian Villanueva', 'pickup', '', 'cash', 0, 12500.00, 0.00, '', '2026-04-15 15:41:31'),
+(28, 7, 'For Review', 'Pending', NULL, 'Dave Mclarry', NULL, NULL, NULL, 0, 13500.00, 13500.00, NULL, '2026-04-16 16:00:00');
+
 -- --------------------------------------------------------
 
 --
@@ -144,6 +159,20 @@ CREATE TABLE `order_items` (
   `wh_item_status` varchar(50) DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `variant_id`, `qty`, `get_from`, `unit_price`, `wh_item_status`) VALUES
+(14, 12, 29, 1, 'WH', 12500.00, 'pending'),
+(15, 21, 30, 1, 'SR', 12500.00, 'pending'),
+(16, 22, 29, 1, 'WH', 12500.00, 'pending'),
+(17, 23, 29, 1, 'SR', 12500.00, 'pending'),
+(18, 23, 29, 1, 'WH', 12500.00, 'pending'),
+(21, 25, 29, 1, 'WH', 12500.00, 'pending'),
+(22, 26, 29, 1, 'SR', 12500.00, 'pending'),
+(24, 28, 31, 1, 'WH', 13500.00, 'pending');
+
 -- --------------------------------------------------------
 
 --
@@ -155,10 +184,19 @@ CREATE TABLE `payment_tracker` (
   `trans_id` int(11) NOT NULL,
   `amount_paid` double(15,2) DEFAULT NULL,
   `date_paid` datetime DEFAULT current_timestamp(),
+  `due_date` date DEFAULT NULL,
   `payment_method` varchar(100) DEFAULT NULL,
   `reference_no` varchar(255) DEFAULT NULL,
-  `remarks` varchar(255) DEFAULT NULL
+  `remarks` varchar(255) DEFAULT NULL,
+  `status` varchar(20) DEFAULT 'Paid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `payment_tracker`
+--
+
+INSERT INTO `payment_tracker` (`id`, `trans_id`, `amount_paid`, `date_paid`, `due_date`, `payment_method`, `reference_no`, `remarks`, `status`) VALUES
+(9, 9, 25000.00, '2026-04-15 00:00:00', NULL, 'eWallet', 'SR-REF-23', 'Finalized Showroom Request', 'Paid');
 
 -- --------------------------------------------------------
 
@@ -185,7 +223,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `code`, `description`, `category`, `price`, `discount`, `is_on_sale`, `default_image`, `created_at`, `is_deleted`) VALUES
-(18, 'Executive Chair', 'EC-03', 'The chair who cant be move', 'Chair', 12599.00, 0, 1, '1776183210_EC-03DarkBrown.png', '2026-04-14 16:13:30', 1);
+(23, 'Executive Chair', 'EC-03', 'The Chair Who Cant Be Moved', 'Chair', 12500.00, 0, 0, '1776203235_EC-03DarkBrown.png', '2026-04-14 18:39:14', 0),
+(24, 'Executive Chair', 'EC-14', 'The White Chair', 'Chair', 13500.00, 0, 0, '1776415288_EC-14White.jpg', '2026-04-17 08:41:28', 0);
 
 -- --------------------------------------------------------
 
@@ -207,7 +246,8 @@ CREATE TABLE `product_components` (
 --
 
 INSERT INTO `product_components` (`id`, `prod_id`, `comp_id`, `qty_needed`, `location`, `is_deleted`) VALUES
-(32, 18, 1, 1, 'Rack A-1', 1);
+(38, 23, 1, 1, 'Rack A-4', 0),
+(39, 24, 1, 1, 'Rack A-4', 0);
 
 -- --------------------------------------------------------
 
@@ -229,8 +269,9 @@ CREATE TABLE `product_variant` (
 --
 
 INSERT INTO `product_variant` (`id`, `prod_id`, `variant`, `min_buildable_qty`, `variant_image`, `is_deleted`) VALUES
-(20, 18, 'Brown', 4, '1776183556_v_EC-03DarkBrown.png', 1),
-(21, 18, 'Black', 4, '1776186914_v_EC-05Black.png', 1);
+(29, 23, 'Brown', 4, '1776203235_v_EC-05Black.png', 0),
+(30, 23, 'Black', 4, '1776203235_v_EC-03DarkBrown.png', 0),
+(31, 24, 'White', 3, '1776415288_v_EC-14White.jpg', 0);
 
 -- --------------------------------------------------------
 
@@ -240,19 +281,23 @@ INSERT INTO `product_variant` (`id`, `prod_id`, `variant`, `min_buildable_qty`, 
 
 CREATE TABLE `showroom_logs` (
   `log_id` int(11) NOT NULL,
-  `variant_id` int(11) NOT NULL,
+  `variant_id` int(11) DEFAULT NULL,
+  `prod_id` int(11) DEFAULT NULL,
   `action` varchar(100) DEFAULT NULL,
   `qty` int(11) DEFAULT NULL,
-  `date_added` datetime DEFAULT current_timestamp()
+  `log_date` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `showroom_logs`
 --
 
-INSERT INTO `showroom_logs` (`log_id`, `variant_id`, `action`, `qty`, `date_added`) VALUES
-(5, 20, 'INVENTORY_ADJUSTMENT', 1, '2026-04-15 01:26:21'),
-(6, 21, 'INVENTORY_ADJUSTMENT', 1, '2026-04-15 01:27:02');
+INSERT INTO `showroom_logs` (`log_id`, `variant_id`, `prod_id`, `action`, `qty`, `log_date`) VALUES
+(2, 31, NULL, 'INVENTORY_ADJUSTMENT', 1, '2026-04-15 02:48:32'),
+(3, 29, NULL, 'INVENTORY_ADJUSTMENT', 1, '2026-04-15 06:31:56'),
+(4, 30, NULL, 'INVENTORY_ADJUSTMENT', 1, '2026-04-15 12:44:12'),
+(5, 29, NULL, 'Sold (Order #26)', -1, '2026-04-15 23:41:32'),
+(6, 29, NULL, 'Showroom Sale (Finalized Request #23)', 1, '2026-04-15 23:43:30');
 
 -- --------------------------------------------------------
 
@@ -273,8 +318,9 @@ CREATE TABLE `showroom_stocks` (
 --
 
 INSERT INTO `showroom_stocks` (`stock_id`, `variant_id`, `qty_on_hand`, `min_display_qty`, `last_update`) VALUES
-(20, 20, 1, 0, '2026-04-15 00:00:00'),
-(21, 21, 1, 0, '2026-04-15 00:00:00');
+(30, 29, 1, 0, '2026-04-16 01:39:30'),
+(31, 30, 2, 0, '2026-04-15 00:00:00'),
+(36, 31, 0, 0, '2026-04-17 16:41:28');
 
 -- --------------------------------------------------------
 
@@ -291,8 +337,16 @@ CREATE TABLE `transactions` (
   `interest` int(11) DEFAULT 0,
   `total_with_interest` double(15,2) DEFAULT NULL,
   `installment_term` int(11) DEFAULT 0,
+  `payment_type` varchar(50) DEFAULT 'Full',
   `status` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `transactions`
+--
+
+INSERT INTO `transactions` (`id`, `order_id`, `transaction_date`, `or_number`, `amount`, `interest`, `total_with_interest`, `installment_term`, `payment_type`, `status`) VALUES
+(9, 23, '2026-04-15 00:00:00', 'SR-REF-23', 25000.00, 0, 25000.00, 1, 'Full', 'Success');
 
 -- --------------------------------------------------------
 
@@ -317,8 +371,8 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `username`, `password_hash`, `full_name`, `role`, `is_online`, `created_at`) VALUES
 (2, 'ryan13', '$2y$10$fE/..bplwBEObVde8Rnt3.7eP6MFiXfR3hMf7VVD.fTU0Ad8Xv97i', 'Ryan', 'admin', 1, '2026-04-13 06:39:25'),
 (3, 'ichan', '$2y$10$yjNEVBd2TofS8eNQuhlq2.noVSBi0hkLjy/6..WFGZihh/t1E3xwW', 'Christian', 'admin', 0, '2026-04-13 06:40:04'),
-(4, 'showroom01', '$2y$10$xTGjk0X4A90LNcwlnQFZhebogHxlJnkC1negwhwdOqeT.pZk0E2L6', 'Christian Villanueva', 'showroom', 0, '2026-04-13 10:39:57'),
-(5, 'warehouse01', '$2y$10$PXciRcx/CGlXb9EEnCMon.LIRqpevgBAREEGjfMnjbVbW35Q8q8Iy', 'Christian Villanueva', 'warehouse', 1, '2026-04-13 10:40:34');
+(7, 'showroom01', '$2y$10$/ntWXUyeMIuh8cTPyOe3Ee0vTA35BhVJABpGg8xKYrZUysvJ0CLNu', 'Wilson McCopper', 'showroom', 1, '2026-04-14 19:13:56'),
+(8, 'warehouse01', '$2y$10$E.EUhoaSa8QUD9vbXDf2aegzfrZa0qKIjGN7ZfCQLPZbjFbn70L5C', 'Mimi Meyers', 'warehouse', 1, '2026-04-14 19:14:14');
 
 -- --------------------------------------------------------
 
@@ -329,124 +383,19 @@ INSERT INTO `users` (`id`, `username`, `password_hash`, `full_name`, `role`, `is
 CREATE TABLE `warehouse_logs` (
   `log_id` int(11) NOT NULL,
   `comp_id` int(11) DEFAULT NULL,
+  `prod_id` int(11) DEFAULT NULL,
+  `variant_id` int(11) DEFAULT NULL,
   `action` varchar(100) DEFAULT NULL,
   `qty` int(11) DEFAULT NULL,
-  `date_added` datetime DEFAULT current_timestamp()
+  `log_date` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dumping data for table `warehouse_logs`
 --
 
-INSERT INTO `warehouse_logs` (`log_id`, `comp_id`, `action`, `qty`, `date_added`) VALUES
-(3, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 17:32:44'),
-(4, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 17:32:44'),
-(5, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 17:32:44'),
-(6, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 17:32:51'),
-(7, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 17:32:51'),
-(8, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 17:32:51'),
-(9, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 17:33:15'),
-(10, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 17:33:15'),
-(11, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 17:33:15'),
-(12, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 17:55:09'),
-(13, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 17:55:09'),
-(14, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 17:55:09'),
-(15, NULL, 'Build Production (Variant ID 11) by User #2', 3, '2026-04-13 18:14:03'),
-(16, 2, 'Recipe Consumption (Build Variant ID 11)', -3, '2026-04-13 18:14:03'),
-(17, 3, 'Recipe Consumption (Build Variant ID 11)', -6, '2026-04-13 18:14:03'),
-(18, NULL, 'Build Production (Variant ID 11) by User #2', 2, '2026-04-13 18:16:51'),
-(19, 2, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 18:16:51'),
-(20, 3, 'Recipe Consumption (Build Variant ID 11)', -4, '2026-04-13 18:16:51'),
-(21, NULL, 'Build Production (Variant ID 11) by User #2', -1, '2026-04-13 18:17:07'),
-(22, 2, 'Recipe Consumption (Build Variant ID 11)', 1, '2026-04-13 18:17:07'),
-(23, 3, 'Recipe Consumption (Build Variant ID 11)', 2, '2026-04-13 18:17:07'),
-(24, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 18:18:59'),
-(25, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 18:18:59'),
-(26, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 18:18:59'),
-(27, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 18:19:06'),
-(28, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 18:19:06'),
-(29, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 18:19:06'),
-(30, NULL, 'Build Production (Variant ID 11) by User #2', 1, '2026-04-13 18:19:06'),
-(31, 2, 'Recipe Consumption (Build Variant ID 11)', -1, '2026-04-13 18:19:06'),
-(32, 3, 'Recipe Consumption (Build Variant ID 11)', -2, '2026-04-13 18:19:06'),
-(33, NULL, 'Warehouse Variant Adjustment (Variant ID 11) by User #2', 2, '2026-04-13 18:21:41'),
-(34, 2, 'Recipe Adjusted (Variant ID 11 multiplier: 2)', 2, '2026-04-13 18:21:41'),
-(35, 3, 'Recipe Adjusted (Variant ID 11 multiplier: 2)', 4, '2026-04-13 18:21:41'),
-(36, NULL, 'Warehouse Variant Adjustment (Variant ID 11) by User #2', 1, '2026-04-13 18:21:52'),
-(37, 2, 'Recipe Adjusted (Variant ID 11 multiplier: 1)', 1, '2026-04-13 18:21:52'),
-(38, 3, 'Recipe Adjusted (Variant ID 11 multiplier: 1)', 2, '2026-04-13 18:21:52'),
-(40, NULL, 'Sold Variant ID 11 (Order #1)', 1, '2026-04-13 18:55:31'),
-(44, NULL, 'Warehouse Variant Adjustment (Variant ID 12) by User #2', 4, '2026-04-13 19:48:04'),
-(45, 1, 'Recipe Adjusted (Variant ID 12 multiplier: 4)', 8, '2026-04-13 19:48:04'),
-(46, NULL, 'Warehouse Sale (Finalized Request #5)', 1, '2026-04-14 01:18:39'),
-(47, 1, 'Stock Transfer to Showroom (Variant ID 13)', -8, '2026-04-14 09:38:53'),
-(48, NULL, 'Warehouse Variant Adjustment (Variant ID 13) by User #2', 1, '2026-04-14 09:39:11'),
-(49, 1, 'Recipe Adjusted (Variant ID 13 multiplier: 1)', 1, '2026-04-14 09:39:11'),
-(50, 1, 'Stock Transfer to Showroom (Variant ID 13)', -1, '2026-04-14 09:39:27'),
-(51, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 4, '2026-04-14 09:49:32'),
-(52, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 4)', 8, '2026-04-14 09:49:32'),
-(53, NULL, 'Warehouse Variant Adjustment (Variant ID 15) by User #2', 2, '2026-04-14 09:49:32'),
-(54, 1, 'Recipe Adjusted (Variant ID 15 multiplier: 2)', 4, '2026-04-14 09:49:32'),
-(55, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 3, '2026-04-14 09:49:48'),
-(56, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 3)', 6, '2026-04-14 09:49:48'),
-(57, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 2, '2026-04-14 09:50:11'),
-(58, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 2)', 4, '2026-04-14 09:50:11'),
-(59, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 1, '2026-04-14 09:50:54'),
-(60, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 1)', 1, '2026-04-14 09:50:54'),
-(61, NULL, 'Warehouse Variant Adjustment (Variant ID 15) by User #2', 1, '2026-04-14 09:50:54'),
-(62, 1, 'Recipe Adjusted (Variant ID 15 multiplier: 1)', 1, '2026-04-14 09:50:54'),
-(63, NULL, 'Warehouse Variant Adjustment (Variant ID 17) by User #2', 1, '2026-04-14 09:52:50'),
-(64, 3, 'Recipe Adjusted (Variant ID 17 multiplier: 1)', 2, '2026-04-14 09:52:50'),
-(65, 2, 'Recipe Adjusted (Variant ID 17 multiplier: 1)', 1, '2026-04-14 09:52:50'),
-(66, NULL, 'Warehouse Variant Adjustment (Variant ID 11) by User #2', 1, '2026-04-14 09:52:50'),
-(67, 3, 'Recipe Adjusted (Variant ID 11 multiplier: 1)', 2, '2026-04-14 09:52:50'),
-(68, 2, 'Recipe Adjusted (Variant ID 11 multiplier: 1)', 1, '2026-04-14 09:52:50'),
-(69, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 7, '2026-04-14 09:53:15'),
-(70, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 7)', 7, '2026-04-14 09:53:15'),
-(71, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 20, '2026-04-14 09:55:01'),
-(72, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 20)', 20, '2026-04-14 09:55:01'),
-(73, NULL, 'Warehouse Variant Adjustment (Variant ID 11) by User #2', 4, '2026-04-14 09:58:19'),
-(74, 3, 'Recipe Adjusted (Variant ID 11 multiplier: 4)', 8, '2026-04-14 09:58:19'),
-(75, 2, 'Recipe Adjusted (Variant ID 11 multiplier: 4)', 4, '2026-04-14 09:58:19'),
-(76, NULL, 'Warehouse Variant Adjustment (Variant ID 17) by User #2', 2, '2026-04-14 09:58:26'),
-(77, 3, 'Recipe Adjusted (Variant ID 17 multiplier: 2)', 4, '2026-04-14 09:58:26'),
-(78, 2, 'Recipe Adjusted (Variant ID 17 multiplier: 2)', 2, '2026-04-14 09:58:26'),
-(79, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 1, '2026-04-14 09:58:53'),
-(80, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 1)', 1, '2026-04-14 09:58:53'),
-(81, NULL, 'Warehouse Variant Adjustment (Variant ID 15) by User #2', 1, '2026-04-14 09:58:53'),
-(82, 1, 'Recipe Adjusted (Variant ID 15 multiplier: 1)', 1, '2026-04-14 09:58:53'),
-(83, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 2, '2026-04-14 09:59:07'),
-(84, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 2)', 2, '2026-04-14 09:59:07'),
-(85, NULL, 'Warehouse Variant Adjustment (Variant ID 15) by User #2', 2, '2026-04-14 09:59:07'),
-(86, 1, 'Recipe Adjusted (Variant ID 15 multiplier: 2)', 2, '2026-04-14 09:59:07'),
-(87, 3, 'Stock Transfer to Showroom (Variant ID 11)', -10, '2026-04-14 10:02:40'),
-(88, 2, 'Stock Transfer to Showroom (Variant ID 11)', -5, '2026-04-14 10:02:40'),
-(89, NULL, 'Warehouse Variant Adjustment (Variant ID 16) by User #2', 39, '2026-04-14 11:49:07'),
-(90, 1, 'Recipe Adjusted (Variant ID 16 multiplier: 39)', 39, '2026-04-14 11:49:07'),
-(91, NULL, 'Warehouse Variant Adjustment (Variant ID 12) by User #2', 4, '2026-04-14 11:50:45'),
-(92, 1, 'Recipe Adjusted (Variant ID 12 multiplier: 4)', 8, '2026-04-14 11:50:45'),
-(93, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 1, '2026-04-15 01:15:24'),
-(94, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 1)', 1, '2026-04-15 01:15:24'),
-(95, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 1, '2026-04-15 01:16:04'),
-(96, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 1)', 1, '2026-04-15 01:16:04'),
-(97, NULL, 'Warehouse Variant Adjustment (Variant ID 20) by User #2', 1, '2026-04-15 01:17:42'),
-(98, 1, 'Recipe Adjusted (Variant ID 20 multiplier: 1)', 1, '2026-04-15 01:17:42'),
-(99, NULL, 'Warehouse Variant Adjustment (Variant ID 20) by User #2', 1, '2026-04-15 01:26:14'),
-(100, 1, 'Recipe Adjusted (Variant ID 20 multiplier: 1)', 1, '2026-04-15 01:26:14'),
-(101, 1, 'Stock Transfer to Showroom (Variant ID 20)', -1, '2026-04-15 01:26:21'),
-(102, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 1, '2026-04-15 01:26:26'),
-(103, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 1)', 1, '2026-04-15 01:26:26'),
-(104, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 1, '2026-04-15 01:26:33'),
-(105, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 1)', 1, '2026-04-15 01:26:33'),
-(106, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 1, '2026-04-15 01:26:41'),
-(107, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 1)', 1, '2026-04-15 01:26:41'),
-(108, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 3, '2026-04-15 01:26:48'),
-(109, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 3)', 3, '2026-04-15 01:26:48'),
-(110, 1, 'Stock Transfer to Showroom (Variant ID 21)', -1, '2026-04-15 01:27:02'),
-(111, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 4, '2026-04-15 01:27:08'),
-(112, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 4)', 4, '2026-04-15 01:27:08'),
-(113, NULL, 'Warehouse Variant Adjustment (Variant ID 21) by User #2', 1, '2026-04-15 01:27:16'),
-(114, 1, 'Recipe Adjusted (Variant ID 21 multiplier: 1)', 1, '2026-04-15 01:27:16');
+INSERT INTO `warehouse_logs` (`log_id`, `comp_id`, `prod_id`, `variant_id`, `action`, `qty`, `log_date`) VALUES
+(30, 1, 24, 31, 'Recipe Adjusted (Variant ID 31 multiplier: 1)', 1, '2026-04-17 16:46:39');
 
 -- --------------------------------------------------------
 
@@ -462,6 +411,15 @@ CREATE TABLE `warehouse_stocks` (
   `qty_on_hand` int(11) NOT NULL DEFAULT 0,
   `last_update` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `warehouse_stocks`
+--
+
+INSERT INTO `warehouse_stocks` (`id`, `prod_id`, `product_comp_id`, `variant_id`, `qty_on_hand`, `last_update`) VALUES
+(50, 23, 38, 29, 1, '2026-04-15'),
+(51, 23, 38, 30, 3, '2026-04-15'),
+(57, 24, 39, 31, 1, '2026-04-17');
 
 --
 -- Indexes for dumped tables
@@ -488,11 +446,14 @@ ALTER TABLE `customers`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `notification`
+-- Indexes for table `notifications`
 --
-ALTER TABLE `notification`
+ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_notif_user` (`user_id`);
+  ADD KEY `target_user_id` (`target_user_id`),
+  ADD KEY `target_role` (`target_role`),
+  ADD KEY `is_read` (`is_read`),
+  ADD KEY `created_at` (`created_at`);
 
 --
 -- Indexes for table `orders`
@@ -543,14 +504,14 @@ ALTER TABLE `product_variant`
 -- Indexes for table `showroom_logs`
 --
 ALTER TABLE `showroom_logs`
-  ADD PRIMARY KEY (`log_id`),
-  ADD KEY `fk_sl_variant` (`variant_id`);
+  ADD PRIMARY KEY (`log_id`);
 
 --
 -- Indexes for table `showroom_stocks`
 --
 ALTER TABLE `showroom_stocks`
   ADD PRIMARY KEY (`stock_id`),
+  ADD UNIQUE KEY `unique_showroom_variant` (`variant_id`),
   ADD KEY `fk_ss_variant` (`variant_id`);
 
 --
@@ -572,14 +533,14 @@ ALTER TABLE `users`
 -- Indexes for table `warehouse_logs`
 --
 ALTER TABLE `warehouse_logs`
-  ADD PRIMARY KEY (`log_id`),
-  ADD KEY `fk_wl_comp_new` (`comp_id`);
+  ADD PRIMARY KEY (`log_id`);
 
 --
 -- Indexes for table `warehouse_stocks`
 --
 ALTER TABLE `warehouse_stocks`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_stock_link` (`prod_id`,`variant_id`,`product_comp_id`),
   ADD KEY `fk_wh_prod` (`prod_id`),
   ADD KEY `fk_wh_variant` (`variant_id`),
   ADD KEY `fk_wh_prod_comp` (`product_comp_id`);
@@ -592,7 +553,7 @@ ALTER TABLE `warehouse_stocks`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `components`
@@ -604,49 +565,49 @@ ALTER TABLE `components`
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `notification`
+-- AUTO_INCREMENT for table `notifications`
 --
-ALTER TABLE `notification`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `payment_tracker`
 --
 ALTER TABLE `payment_tracker`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `product_components`
 --
 ALTER TABLE `product_components`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `product_variant`
 --
 ALTER TABLE `product_variant`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `showroom_logs`
@@ -658,31 +619,31 @@ ALTER TABLE `showroom_logs`
 -- AUTO_INCREMENT for table `showroom_stocks`
 --
 ALTER TABLE `showroom_stocks`
-  MODIFY `stock_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `stock_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `warehouse_logs`
 --
 ALTER TABLE `warehouse_logs`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `warehouse_stocks`
 --
 ALTER TABLE `warehouse_stocks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- Constraints for dumped tables
@@ -694,12 +655,6 @@ ALTER TABLE `warehouse_stocks`
 ALTER TABLE `cart`
   ADD CONSTRAINT `fk_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_cart_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variant` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `notification`
---
-ALTER TABLE `notification`
-  ADD CONSTRAINT `fk_notif_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `orders`
@@ -735,12 +690,6 @@ ALTER TABLE `product_variant`
   ADD CONSTRAINT `fk_variant_product` FOREIGN KEY (`prod_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `showroom_logs`
---
-ALTER TABLE `showroom_logs`
-  ADD CONSTRAINT `fk_sl_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variant` (`id`) ON DELETE CASCADE;
-
---
 -- Constraints for table `showroom_stocks`
 --
 ALTER TABLE `showroom_stocks`
@@ -751,12 +700,6 @@ ALTER TABLE `showroom_stocks`
 --
 ALTER TABLE `transactions`
   ADD CONSTRAINT `fk_trans_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `warehouse_logs`
---
-ALTER TABLE `warehouse_logs`
-  ADD CONSTRAINT `fk_wl_comp_new` FOREIGN KEY (`comp_id`) REFERENCES `components` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `warehouse_stocks`

@@ -170,8 +170,23 @@
         overlay.addEventListener('click', hideSidebar);
         document.addEventListener('keydown', (e) => { if (e.key === "Escape") hideSidebar(); });
 
-        // Initial fetch and poll
+        // Initial full fetch on load
         fetchNotifications();
-        setInterval(fetchNotifications, 30000); // Poll every 30s
+
+        // Lightweight badge-only poll every 10s (fast, just a COUNT query)
+        setInterval(() => {
+            fetch(`${ctrlPath}?action=get_notifications`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        updateBadge(res.unread);
+                        // If sidebar is open, also re-render the list
+                        if (sidebar.style.transform === 'translateX(0px)' || sidebar.style.transform === 'translateX(0)') {
+                            renderNotifications(res.notifications);
+                        }
+                    }
+                })
+                .catch(() => {});
+        }, 10000); // Every 10 seconds
     });
 </script>
