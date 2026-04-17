@@ -43,8 +43,8 @@ $pendingSR = $stats['pending_sr'];
     <title>Prime-In-Sync</title>
     <link rel="icon" type="image/x-icon" href="../../public/assets/img/primeLogo.ico">
     <link rel="stylesheet" href="../output.css">
-    <script src="../../public/assets/js/global.js" defer></script>
-    <script src="../../public/assets/js/warehouse.js" defer></script>
+    <script src="../../public/assets/js/global.js?v=1.2" defer></script>
+    <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
 
     <style>
         /* Shrink entire UI by 10% */
@@ -101,7 +101,6 @@ $pendingSR = $stats['pending_sr'];
                 <span class="text-sm text-red-600 font-medium">Logout</span>
             </a>
 
-            <?php include '../include/logout-modal.php'; ?>
         </div>
     </header>
 
@@ -527,6 +526,7 @@ $pendingSR = $stats['pending_sr'];
         </div>
     </div>
 
+    <?php include '../include/logout-modal.php'; ?>
 </body>
 
 </html>

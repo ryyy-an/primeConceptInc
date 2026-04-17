@@ -8,18 +8,5 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[Warehouse] Module Initialized');
 });
 
-/**
- * Common logout modal toggle (if not handled by global.js)
- */
-function toggleLogoutModal(show) {
-    const modal = document.getElementById('logoutModal');
-    if (!modal) return;
-    
-    if (show) {
-        modal.classList.remove('hidden');
-        setTimeout(() => modal.classList.add('opacity-100'), 10);
-    } else {
-        modal.classList.remove('opacity-100');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    }
-}
+// toggleLogoutModal was removed from here because it conflicted with the global.js implementation.
+// The system now uses window.toggleLogoutModal from global.js which handles the 'logout-modal' ID correctly.
