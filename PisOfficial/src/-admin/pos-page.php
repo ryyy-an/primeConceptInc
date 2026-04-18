@@ -1064,7 +1064,7 @@ if (isset($_SESSION['user_id'])) {
 
                                             <div class="col-span-2 space-y-1.5">
                                                 <label id="amountLabel"
-                                                    class="text-xs font-semibold text-gray-700 ml-1">Initial / Downpayment</label>
+                                                    class="text-xs font-semibold text-gray-700 ml-1">Amount to Pay Now</label>
                                                 <div class="relative">
                                                     <span
                                                         class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-600">₱</span>

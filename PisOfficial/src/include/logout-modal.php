@@ -1,5 +1,5 @@
 <!-- logout-modal.php -->
-<div id="logout-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+<div id="logout-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
     <div class="absolute inset-0 bg-black/40"></div>
 
     <div class="modal-box relative bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 duration-200" id="logout-content">

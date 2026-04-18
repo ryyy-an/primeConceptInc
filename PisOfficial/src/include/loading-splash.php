@@ -5,11 +5,38 @@ if (!isset($_SESSION['login_success_splash']) || $_SESSION['login_success_splash
 // Clear flag so it only shows once
 $_SESSION['login_success_splash'] = false;
 ?>
-<div id="loading-splash" class="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center transition-opacity duration-700">
+<style>
+    @keyframes logo-pulse {
+        0%, 100% { transform: scale(1); filter: brightness(1); }
+        50% { transform: scale(1.1); filter: brightness(1.2); }
+    }
+
+    @keyframes animate-loading-bar {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(0); }
+        100% { transform: translateX(100%); }
+    }
+
+    .animate-logo-pulse {
+        animation: logo-pulse 2s infinite ease-in-out;
+    }
+
+    .animate-loading-bar {
+        animation: animate-loading-bar 1.5s infinite linear;
+    }
+
+    #loading-splash {
+        background-color: #ffffff;
+        z-index: 999999;
+        transition: opacity 0.7s ease-in-out;
+    }
+</style>
+
+<div id="loading-splash" class="fixed inset-0 flex flex-col items-center justify-center">
     <div class="flex flex-col items-center translate-y-[15%]">
         <div class="relative w-32 h-32 flex items-center justify-center">
             <!-- Official Prime Concept Logo -->
-            <div id="prime-logo-container" class="w-full h-full flex items-center justify-center">
+            <div id="prime-logo-container" class="w-full h-full flex items-center justify-center relative z-10">
                 <img src="../../public/assets/img/primeLogo.ico"
                     alt="Prime Concept"
                     class="w-20 h-20 object-contain animate-logo-pulse brightness-110 drop-shadow-2xl">
@@ -30,86 +57,59 @@ $_SESSION['login_success_splash'] = false;
     </div>
 </div>
 
-<style>
-    @keyframes logo-pulse {
-
-        0%,
-        100% {
-            transform: scale(1);
-            filter: brightness(1);
-        }
-
-        50% {
-            transform: scale(1.1);
-            filter: brightness(1.2);
-        }
-    }
-
-    .animate-logo-pulse {
-        animation: logo-pulse 2s infinite ease-in-out;
-    }
-
-    #loading-splash {
-        background-color: #ffffff;
-        z-index: 999999;
-    }
-</style>
+<?php
+$role = $_SESSION['role'] ?? 'staff';
+if ($role === 'admin') {
+    $roleMsg = "Initializing Admin";
+} elseif ($role === 'showroom') {
+    $roleMsg = "Preparing Showroom Catalog";
+} else {
+    $roleMsg = "Readying Warehouse Inventory";
+}
+?>
 
 <script>
     (function() {
         const text = document.getElementById('loading-text');
         const splash = document.getElementById('loading-splash');
-        <?php
-        $role = $_SESSION['role'] ?? 'staff';
-        if ($role === 'admin') {
-            $roleMsg = "Initializing Admin";
-        } elseif ($role === 'showroom') {
-            $roleMsg = "Preparing Showroom Catalog";
-        } else {
-            // Default message for Warehouse or others
-            $roleMsg = "Readying Warehouse Inventory";
+        
+        // Match the sequence requested: Synchronizing -> Preparing Role
+        const statusMessages = ["Synchronizing Prime", "<?= $roleMsg ?>", "Optimizing Inventory", "Finalizing Modules"];
+        let index = 0;
+
+        function cycleText() {
+            if (!text) return;
+            
+            // Slide down existing text
+            text.style.transform = 'translateY(100%)';
+            
+            setTimeout(() => {
+                index = (index + 1) % statusMessages.length;
+                text.innerText = statusMessages[index];
+                // Slide up new text
+                text.style.transform = 'translateY(0)';
+            }, 500);
         }
-        ?>
-        const statusMessages = ["Optimizing Inventory", "<?= $roleMsg ?>", "Synchronizing Prime", "Loading Showroom"];
 
-        if (!splash) return;
+        // Start cycling every 2 seconds for visibility
+        const interval = setInterval(cycleText, 2000);
+        
+        // Set initial text and state
+        if(text) {
+            text.innerText = statusMessages[0];
+            setTimeout(() => { text.style.transform = 'translateY(0)'; }, 50);
+        }
 
-        let currentMsg = 0;
-
-        const cycleText = () => {
-            if (text) {
-                text.style.transform = 'translateY(100%)';
-                setTimeout(() => {
-                    text.innerText = statusMessages[currentMsg % statusMessages.length] + "...";
-                    text.style.transform = 'translateY(0)';
-                }, 300);
-            }
-            currentMsg++;
-        };
-
-        cycleText();
-        const interval = setInterval(cycleText, 1500);
-
-        // Smooth exit
         window.addEventListener('load', () => {
+            // Keep it visible for at least 3 seconds so they can see the sequence
             setTimeout(() => {
                 clearInterval(interval);
-                splash.classList.add('opacity-0');
-                setTimeout(() => {
-                    splash.remove();
-                }, 700);
-            }, 2500);
+                if (splash) {
+                    splash.style.opacity = '0';
+                    splash.style.pointerEvents = 'none';
+                    setTimeout(() => { splash.style.display = 'none'; }, 800);
+                }
+            }, 3500);
         });
-
-        // Fallback
-        setTimeout(() => {
-            if (document.getElementById('loading-splash')) {
-                clearInterval(interval);
-                splash.classList.add('opacity-0');
-                setTimeout(() => {
-                    splash.remove();
-                }, 700);
-            }
-        }, 5000);
     })();
 </script>

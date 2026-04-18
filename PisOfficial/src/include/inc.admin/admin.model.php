@@ -422,6 +422,22 @@ function process_admin_pos_sale(PDO $pdo, array $data): array
         $pdo->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$userId]);
 
         $pdo->commit();
+
+        // Notification: Notify Warehouse if there are WH items
+        $hasWHItems = false;
+        foreach ($cartItems as $item) {
+            if ($item['source'] === 'WH') {
+                $hasWHItems = true;
+                break;
+            }
+        }
+
+        if ($hasWHItems) {
+            $adminId = (int)($_SESSION['user_id'] ?? 0);
+            $msg = "Order #$orderId (POS) is paid and ready for fulfillment.";
+            create_notification($pdo, $adminId, 'Order to Fulfill', "Status: Paid\nSummary: $msg", 'fulfillment', null, 'warehouse');
+        }
+
         return ['success' => true, 'order_id' => $orderId];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -688,6 +704,19 @@ function record_manual_collection(PDO $pdo, int $orderId, float $amount, string 
         }
 
         $pdo->commit();
+
+        // Notification: Notify Warehouse if order is now Ongoing/Success and has WH items
+        // Check if there's any item from WH for this order
+        $stmtWH = $pdo->prepare("SELECT COUNT(*) FROM order_items WHERE order_id = ? AND (get_from = 'WH' OR get_from = 'Warehouse')");
+        $stmtWH->execute([$orderId]);
+        $hasWH = (int)$stmtWH->fetchColumn() > 0;
+
+        if ($hasWH) {
+            $adminId = (int)($_SESSION['user_id'] ?? 0);
+            $msg = "Payment recorded for Order #$orderId. Ready for fulfillment.";
+            create_notification($pdo, $adminId, 'Order to Fulfill', "Status: Ready\nSummary: $msg", 'fulfillment', null, 'warehouse');
+        }
+
         return true;
     } catch (PDOException $e) {
         $pdo->rollBack();
@@ -734,10 +763,7 @@ function update_order_status(PDO $pdo, int $orderId, string $status, float $disc
             $msg = "Order for $customerName has been " . strtolower($status) . ".";
             create_notification($pdo, $adminId, "Order Update", "Status: " . ucfirst($status) . "\nSummary: $msg", 'result', $creatorId);
 
-            // Notification: Admin -> Warehouse (If approved, for fulfillment)
-            if ($status === 'Approved') {
-                create_notification($pdo, $adminId, 'Order to Fulfill', "Status: Approved\nSummary: #$orderId cleared for Warehouse fulfillment.", 'fulfillment', null, 'warehouse');
-            }
+            // Notification: Admin -> Warehouse (Trigger removed here, moved to Payment step)
         }
 
         return true;
