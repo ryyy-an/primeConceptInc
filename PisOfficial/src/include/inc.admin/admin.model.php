@@ -120,7 +120,7 @@ function get_or_create_component($pdo, $name)
 function link_product_component($pdo, $prod_id, $comp_id, $qty, $loc = '')
 {
     // 1. Link the component to the product
-    $stmt = $pdo->prepare("INSERT INTO product_components (prod_id, comp_id, qty_needed, location) VALUES (?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO product_components (prod_id, comp_id, qty_needed, location, is_deleted) VALUES (?, ?, ?, ?, 0)");
     $stmt->execute([$prod_id, $comp_id, $qty, empty(trim($loc)) ? 'Aisle Unknown' : trim($loc)]);
     $pc_id = $pdo->lastInsertId();
 
@@ -138,7 +138,7 @@ function link_product_component($pdo, $prod_id, $comp_id, $qty, $loc = '')
 function insert_variant($pdo, $prod_id, $name, $img, $min_qty = 0)
 {
     // 1. Insert the variant
-    $stmt = $pdo->prepare("INSERT INTO product_variant (prod_id, variant, variant_image, min_buildable_qty) VALUES (?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO product_variant (prod_id, variant, variant_image, min_buildable_qty, is_deleted) VALUES (?, ?, ?, ?, 0)");
     $stmt->execute([$prod_id, $name, $img, $min_qty]);
     $variantId = $pdo->lastInsertId();
 
