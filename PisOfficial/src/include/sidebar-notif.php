@@ -84,9 +84,12 @@
 
         function fetchNotifications(isPolling = false) {
             fetch(`${ctrlPath}?action=get_notifications`)
-                .then(res => res.json())
                 .then(res => {
-                    if (res.success) {
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    return res.json();
+                })
+                .then(res => {
+                    if (res && res.success) {
                         const notifs = res.notifications || [];
                         
                         // Check for new notifications to show toast
@@ -94,7 +97,9 @@
                             const newNotifs = notifs.filter(n => parseInt(n.id) > lastSeenNotifId && n.is_read == '0');
                             newNotifs.forEach(n => {
                                 if (window.showToast) {
-                                    window.showToast(`New ${n.title}`, 'success');
+                                    // Use the message content for the toast
+                                    const shortMsg = n.message.split('\n')[1] || n.message.split('\n')[0]; 
+                                    window.showToast(shortMsg, 'success');
                                 }
                             });
                         }
@@ -109,7 +114,10 @@
                         updateBadge(res.unread);
                     }
                 })
-                .catch(err => console.error("Notif Error:", err));
+                .catch(err => {
+                    // Silently fail during polling to avoid console spam
+                    if (!isPolling) console.error("Notif Error:", err);
+                });
         }
 
         function renderNotifications(notifs) {
@@ -196,9 +204,9 @@
         // Initial full fetch on load
         fetchNotifications(false);
 
-        // Lightweight poll every 15s
+        // Responsive 3s poll for real-time responsiveness
         setInterval(() => {
             fetchNotifications(true);
-        }, 15000); 
+        }, 3000); 
     });
 </script>

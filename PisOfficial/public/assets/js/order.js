@@ -108,9 +108,13 @@ async function populateOrderSummary() {
             itemCountEl.innerText = `${count} Items`;
             grandTotalEl.innerText = `₱${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
-            // Set default amount to pay if empty (Admin POS only usually)
-            if (amountPaidInput && amountPaidInput.value === "") {
-                amountPaidInput.value = total;
+            // Ensure default transaction state is 'Full'
+            const typeSelect = document.getElementById("transactionType");
+            if (typeSelect) {
+                typeSelect.value = "full";
+                if (typeof toggleInstallmentView === "function") {
+                    toggleInstallmentView("full");
+                }
             }
 
             // Trigger sync calculation if POS installment exists

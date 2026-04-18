@@ -61,6 +61,20 @@ try {
 
             // Note: User requested NO automatic stock deduction in this step.
             $success = fulfill_warehouse_order($pdo, $orderId);
+
+            if ($success) {
+                // Determine order creator to notify them
+                $stmt = $pdo->prepare("SELECT created_by, customer_id, temp_customer_name FROM orders WHERE id = ?");
+                $stmt->execute([$orderId]);
+                $orderInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($orderInfo && $orderInfo['created_by']) {
+                    $creatorId = (int)$orderInfo['created_by'];
+                    $whUserId = (int)$_SESSION['user_id'];
+                    $msg = "Order #$orderId has been fulfilled by Warehouse and is ready.";
+                    create_notification($pdo, $whUserId, 'Order Ready', $msg, 'result', $creatorId);
+                }
+            }
             echo json_encode(['success' => $success]);
             break;
 

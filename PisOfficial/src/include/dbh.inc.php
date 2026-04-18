@@ -2,11 +2,24 @@
 
 // Priority: Railway Env Vars -> System getenv -> Localhost fallback
 // Using (?:) to ensure we fall back even if the environment variable is an empty string
-$dbHost = ($_ENV['MYSQLHOST']     ?? getenv('MYSQLHOST')) ?: "localhost";
-$dbName = ($_ENV['MYSQLDATABASE'] ?? getenv('MYSQLDATABASE')) ?: "pis-sys-db";
-$dbUser = ($_ENV['MYSQLUSER']     ?? getenv('MYSQLUSER')) ?: "root";
-$dbPass = $_ENV['MYSQLPASSWORD'] ?? getenv('MYSQLPASSWORD') ?? ""; // Password can legitimately be empty
-$dbPort = ($_ENV['MYSQLPORT']     ?? getenv('MYSQLPORT')) ?: "3306";
+function getDbEnv($var, $default) {
+    // Check $_ENV first
+    if (!empty($_ENV[$var])) {
+        return $_ENV[$var];
+    }
+    // Then check getenv()
+    $val = getenv($var);
+    if ($val !== false && $val !== "") {
+        return $val;
+    }
+    return $default;
+}
+
+$dbHost = getDbEnv('MYSQLHOST', 'localhost');
+$dbName = getDbEnv('MYSQLDATABASE', 'pis-sys-db');
+$dbUser = getDbEnv('MYSQLUSER', 'root');
+$dbPass = getDbEnv('MYSQLPASSWORD', ''); // Password can be empty
+$dbPort = getDbEnv('MYSQLPORT', '3306');
 
 // DSN (Data Source Name)
 $dsn = "mysql:host=" . $dbHost . ";port=" . $dbPort . ";dbname=" . $dbName;
