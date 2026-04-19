@@ -69,6 +69,7 @@ function getInitials($name)
     <script src="../../public/assets/js/global.js" defer></script>
     <script src="../../public/assets/js/order.js" defer></script>
     <script src="../../public/assets/js/settings.js?v=1.3.0" defer></script>
+    <script src="../../public/assets/js/rep-generation.js?v=<?= time() ?>" defer></script>
 
 
     <style>
@@ -146,8 +147,7 @@ function getInitials($name)
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
                 </svg>
@@ -696,70 +696,7 @@ function getInitials($name)
         </div>
     </main>
 
-    <script>
-        window.showReportSection = function(sectionId, linkId) {
-            // Hide all sections
-            document.querySelectorAll('.report-section').forEach(s => s.classList.add('hidden'));
-            
-            const activeClasses = ['bg-red-600', 'text-white', 'shadow-lg', 'shadow-red-100', 'active-report-link'];
-            const inactiveClasses = ['text-gray-400', 'hover:bg-gray-50', 'hover:text-gray-900', 'border-transparent', 'hover:border-gray-100'];
-            
-            // Deactivate all links
-            document.querySelectorAll('.report-link').forEach(l => {
-                l.classList.remove(...activeClasses);
-                l.classList.add(...inactiveClasses);
-            });
 
-            // Show target section
-            const sec = document.getElementById(sectionId);
-            if(sec) sec.classList.remove('hidden');
-
-            // Activate target link
-            const lnk = document.getElementById(linkId);
-            if(lnk) {
-                lnk.classList.remove(...inactiveClasses);
-                lnk.classList.add(...activeClasses);
-            }
-
-            // Persistence
-            localStorage.setItem('activeReportSection', sectionId);
-            localStorage.setItem('activeReportLink', linkId);
-            
-            // Optional: update URL cleanly without reloading
-            const url = new URL(window.location);
-            url.searchParams.set('section', sectionId);
-            window.history.replaceState({}, '', url);
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlSection = urlParams.get('section');
-            const savedSection = localStorage.getItem('activeReportSection');
-            const savedLink = localStorage.getItem('activeReportLink');
-            
-            if (urlSection) {
-                // If URL says which section to show, find its link
-                let targetLinkId = '';
-                document.querySelectorAll('.report-link').forEach(l => {
-                    const onclickStr = l.getAttribute('onclick') || '';
-                    if(onclickStr.includes(urlSection)) {
-                        targetLinkId = l.id;
-                    }
-                });
-                if(targetLinkId) {
-                    showReportSection(urlSection, targetLinkId);
-                } else {
-                    showReportSection('filedReportsSection', 'filedReportsLink');
-                }
-            } else if (savedSection && savedLink) {
-                // Otherwise check local storage
-                showReportSection(savedSection, savedLink);
-            } else {
-                // Defualt
-                showReportSection('filedReportsSection', 'filedReportsLink');
-            }
-        });
-    </script>
 
 </body>
 

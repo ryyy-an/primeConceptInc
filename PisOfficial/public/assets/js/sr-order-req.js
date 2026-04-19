@@ -64,7 +64,7 @@ function closeSrModal(modalId, boxId) {
 
 // --- REQUEST DETAILS MODAL ---
 
-async function openRequestInfoModal(req) {
+window.openRequestInfoModal = async function(req) {
     if (!req) return;
     currentModalStatus = (req.status || 'pending').toLowerCase();
     initialModalState = null; // Reset for a new session
@@ -135,7 +135,9 @@ async function openRequestInfoModal(req) {
             completeBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-100', 'opacity-50', 'cursor-not-allowed');
             completeBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'shadow-red-100');
             completeBtn.innerHTML = `<span>Cancel Request</span>`;
-            completeBtn.onclick = () => cancelRequest(req.pr_no);
+            // Simplified: delegation will handle the data-pr-no attribute
+            completeBtn.setAttribute('data-pr-no', req.pr_no);
+            completeBtn.setAttribute('data-action', 'cancel');
         } else {
             // Cancelled: Hide the button entirely
             completeBtn.classList.add('hidden');
@@ -153,7 +155,7 @@ async function openRequestInfoModal(req) {
         completeBtn.classList.remove('hidden');
         completeBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-100');
         completeBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'shadow-red-100');
-        completeBtn.onclick = handleShowroomCompleteSale;
+        completeBtn.setAttribute('data-action', 'complete');
 
         if (!isApproved) {
             completeBtn.disabled = true;
@@ -166,12 +168,11 @@ async function openRequestInfoModal(req) {
         }
     }
 
-    // Cancel Button visibility (Left Column - may keep it or hide if redundant)
-    // The user wanted the footer button to be the Cancel button for 'For Review'.
+    // Cancel Button visibility (Left Column)
     const cancelContainer = document.getElementById('modal-cancel-container');
     if (status === 'pending' || status === 'approved') { 
         cancelContainer.innerHTML = `
-            <button onclick="cancelRequest(${req.pr_no})" 
+            <button data-cancel-req="${req.pr_no}"
                 class="w-full py-4 bg-white border-2 border-red-50 text-red-600 font-bold rounded-2xl hover:bg-red-50 transition-all active:scale-95 uppercase text-[11px] tracking-widest shadow-sm">
                 Cancel Request
             </button>
@@ -195,7 +196,7 @@ async function openRequestInfoModal(req) {
     }, 10);
 }
 
-function closeRequestInfoModal() {
+window.closeRequestInfoModal = function() {
     if (isModalDirty()) {
         if (!confirm("You have unsaved transaction details. Are you sure you want to discard them?")) {
             return;
@@ -206,17 +207,17 @@ function closeRequestInfoModal() {
 
 // --- CANCELLATION LOGIC ---
 
-function cancelRequest(prNo) {
+window.cancelRequest = function(prNo) {
     document.getElementById('cancel-pr-no-display').textContent = `#${prNo}`;
     document.getElementById('cancel-pr-no-input').value = prNo;
     openSrModal('cancelConfirmModal', 'cancelConfirmBox');
 }
 
-function closeCancelConfirmModal() {
+window.closeCancelConfirmModal = function() {
     closeSrModal('cancelConfirmModal', 'cancelConfirmBox');
 }
 
-function confirmCancelExecution() {
+window.confirmCancelExecution = function() {
     const prNo = document.getElementById('cancel-pr-no-input').value;
     const btn = document.getElementById('confirmCancelBtn');
     
@@ -349,7 +350,7 @@ function showValidationError(title, message) {
     openSrModal('validationErrorModal', 'validationErrorBox');
 }
 
-function closeValidationErrorModal() {
+window.closeValidationErrorModal = function() {
     closeSrModal('validationErrorModal', 'validationErrorBox');
 }
 
@@ -360,11 +361,11 @@ function showFinalizeConfirm() {
     openSrModal('finalizeConfirmModal', 'finalizeConfirmBox');
 }
 
-function closeFinalizeConfirmModal() {
+window.closeFinalizeConfirmModal = function() {
     closeSrModal('finalizeConfirmModal', 'finalizeConfirmBox');
 }
 
-async function handleShowroomCompleteSale() {
+window.handleShowroomCompleteSale = async function() {
     const btn = document.getElementById("showroomCompleteSaleBtn");
     const orderId = document.getElementById("hidden-order-id")?.innerText;
 
@@ -394,7 +395,7 @@ async function handleShowroomCompleteSale() {
     showFinalizeConfirm();
 }
 
-async function executeFinalizeTransaction() {
+window.executeFinalizeTransaction = async function() {
     const btn = document.getElementById("showroomCompleteSaleBtn");
     const confirmBtn = document.getElementById("confirmFinalizeBtn");
     const orderId = document.getElementById("hidden-order-id")?.innerText;
@@ -463,4 +464,85 @@ async function executeFinalizeTransaction() {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof updateCartBadgeCount === 'function') updateCartBadgeCount();
+
+    // Centralized Event Delegation
+    document.body.addEventListener('click', (e) => {
+        // Open Request Info Modal
+        const openBtn = e.target.closest('[data-open-req-modal]');
+        if (openBtn) {
+            const req = JSON.parse(openBtn.getAttribute('data-open-req-modal'));
+            window.openRequestInfoModal(req);
+            return;
+        }
+
+        // Close Request Info Modal
+        if (e.target.closest('[data-close-req-modal]')) {
+            window.closeRequestInfoModal();
+            return;
+        }
+
+        // Cancel Request (from main list or modal)
+        const cancelBtn = e.target.closest('[data-cancel-req]');
+        if (cancelBtn) {
+            const prNo = cancelBtn.getAttribute('data-cancel-req');
+            window.cancelRequest(prNo);
+            return;
+        }
+
+        // Close Cancel Confirm
+        if (e.target.closest('[data-close-cancel-confirm]')) {
+            window.closeCancelConfirmModal();
+            return;
+        }
+
+        // Confirm Cancel Execution
+        if (e.target.closest('[data-confirm-cancel-exec]')) {
+            window.confirmCancelExecution();
+            return;
+        }
+
+        // Close Validation Error
+        if (e.target.closest('[data-close-validation-error]')) {
+            window.closeValidationErrorModal();
+            return;
+        }
+
+        // Close Finalize Confirm
+        if (e.target.closest('[data-close-finalize-confirm]')) {
+            window.closeFinalizeConfirmModal();
+            return;
+        }
+
+        // Confirm Finalize Execution
+        if (e.target.closest('[data-confirm-finalize-exec]')) {
+            window.executeFinalizeTransaction();
+            return;
+        }
+
+        // Complete Sale / Cancel Request (Footer Button)
+        const completeBtn = e.target.closest('#showroomCompleteSaleBtn');
+        if (completeBtn && !completeBtn.disabled) {
+            const action = completeBtn.getAttribute('data-action');
+            if (action === 'cancel') {
+                const prNo = completeBtn.getAttribute('data-pr-no');
+                window.cancelRequest(prNo);
+            } else {
+                 window.handleShowroomCompleteSale();
+            }
+            return;
+        }
+    });
+
+    // Handle Input/Change Delegation
+    document.body.addEventListener('input', (e) => {
+        if (e.target.id === 'clientName' && typeof handleCustomerSearch === 'function') {
+            handleCustomerSearch(e.target.value);
+        }
+    });
+
+    document.body.addEventListener('change', (e) => {
+        if (e.target.id === 'shippingMode' && typeof toggleAddress === 'function') {
+            toggleAddress(e.target.value);
+        }
+    });
 });

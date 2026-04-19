@@ -110,8 +110,7 @@ if (isset($_SESSION['user_id'])) {
 
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -298,7 +297,7 @@ if (isset($_SESSION['user_id'])) {
                                     </td>
                                     <td class="px-6 py-5 text-center">
                                         <div class="flex items-center justify-center gap-2">
-                                            <button onclick="openRequestInfoModal(<?= h(json_encode($row)) ?>)"
+                                            <button data-open-req-modal='<?= h(json_encode($row)) ?>'
                                                 class="p-2 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer text-gray-400 hover:text-gray-900"
                                                 title="View Details">
                                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -334,7 +333,7 @@ if (isset($_SESSION['user_id'])) {
                             <div class="w-2 h-8 bg-red-600 rounded-full"></div>
                             <h3 class="text-xl font-black text-gray-900 tracking-tight uppercase">Request Details</h3>
                         </div>
-                        <button onclick="closeRequestInfoModal()"
+                        <button data-close-req-modal
                             class="p-2 hover:bg-gray-100 rounded-xl transition-all group">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                 class="h-6 w-6 text-gray-400 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24"
@@ -484,7 +483,6 @@ if (isset($_SESSION['user_id'])) {
                                                 Authorized Person</label>
                                             <div class="relative">
                                                 <input type="text" id="clientName" autocomplete="off"
-                                                    oninput="handleCustomerSearch(this.value)"
                                                     placeholder="Enter name..."
                                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-semibold">
 
@@ -522,7 +520,7 @@ if (isset($_SESSION['user_id'])) {
                                         <div class="space-y-1.5">
                                             <label class="text-xs font-semibold text-gray-700 ml-1">Shipping
                                                 Mode</label>
-                                            <select id="shippingMode" onchange="toggleAddress(this.value)"
+                                            <select id="shippingMode"
                                                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer">
                                                 <option value="pickup">Store Pickup</option>
                                                 <option value="delivery">Delivery Service</option>
@@ -622,14 +620,14 @@ if (isset($_SESSION['user_id'])) {
                     </div>
 
                     <div class="p-8 flex justify-between items-center gap-4 bg-white border-t border-gray-100 z-20">
-                        <button onclick="closeRequestInfoModal()"
+                        <button data-close-req-modal
                             class="flex-1 justify-center bg-black hover:bg-zinc-800 text-white rounded-xl py-4 px-6 font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-gray-200 active:scale-95 flex items-center gap-2">
                             <span>Close Window</span>
                         </button>
 
                         <div id="hidden-order-id" class="hidden"></div>
 
-                        <button id="showroomCompleteSaleBtn" onclick="handleShowroomCompleteSale()"
+                        <button id="showroomCompleteSaleBtn"
                             class="flex-1 justify-center bg-red-600 hover:bg-red-700 text-white rounded-xl py-4 px-6 font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-100 active:scale-95 flex items-center gap-2">
                             <span>Complete Sale</span>
                         </button>
@@ -640,7 +638,7 @@ if (isset($_SESSION['user_id'])) {
 
 
             <div id="cancelConfirmModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 transition-all duration-300">
-                <div class="absolute inset-0 bg-slate-900/60" onclick="closeCancelConfirmModal()"></div>
+                <div class="absolute inset-0 bg-slate-900/60" data-close-cancel-confirm></div>
                 <div class="modal-box relative bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 transform scale-95 opacity-0 transition-all duration-300 max-w-sm" id="cancelConfirmBox">
                     <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -658,9 +656,9 @@ if (isset($_SESSION['user_id'])) {
                     </p>
                     <input type="hidden" id="cancel-pr-no-input">
                     <div class="flex gap-3">
-                        <button type="button" onclick="closeCancelConfirmModal()"
+                        <button type="button" data-close-cancel-confirm
                             class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">No, Keep It</button>
-                        <button type="button" id="confirmCancelBtn" onclick="confirmCancelExecution()"
+                        <button type="button" id="confirmCancelBtn" data-confirm-cancel-exec
                             class="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-200 active:scale-95">Yes, Cancel Order</button>
                     </div>
                 </div>
@@ -669,7 +667,7 @@ if (isset($_SESSION['user_id'])) {
 
             <!-- Validation Error Modal -->
             <div id="validationErrorModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 transition-all duration-300">
-                <div class="absolute inset-0 bg-slate-900/40" onclick="closeValidationErrorModal()"></div>
+                <div class="absolute inset-0 bg-slate-900/40" data-close-validation-error></div>
                 <div class="modal-box relative bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 transform scale-95 opacity-0 transition-all duration-300 max-w-sm" id="validationErrorBox">
                     <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-amber-50/50">
                         <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -682,14 +680,14 @@ if (isset($_SESSION['user_id'])) {
                     <p class="text-gray-500 mb-8 text-sm leading-relaxed" id="validation-message">
                         Please check your information and try again.
                     </p>
-                    <button type="button" onclick="closeValidationErrorModal()"
+                    <button type="button" data-close-validation-error
                         class="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-gray-200 active:scale-95 transition-all">Understood</button>
                 </div>
             </div>
 
             <!-- Finalize Confirmation Modal -->
             <div id="finalizeConfirmModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 transition-all duration-300">
-                <div class="absolute inset-0 bg-slate-900/60" onclick="closeFinalizeConfirmModal()"></div>
+                <div class="absolute inset-0 bg-slate-900/60" data-close-finalize-confirm></div>
                 <div class="modal-box relative bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 transform scale-95 opacity-0 transition-all duration-300 max-w-sm" id="finalizeConfirmBox">
                     <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -701,9 +699,9 @@ if (isset($_SESSION['user_id'])) {
                         This will record the transaction, update the inventory, and generate a receipt. Are you sure?
                     </p>
                     <div class="flex gap-3">
-                        <button type="button" onclick="closeFinalizeConfirmModal()"
+                        <button type="button" data-close-finalize-confirm
                             class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">Review Again</button>
-                        <button type="button" id="confirmFinalizeBtn" onclick="executeFinalizeTransaction()"
+                        <button type="button" id="confirmFinalizeBtn" data-confirm-finalize-exec
                             class="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-blue-100 active:scale-95">Yes, Process Sale</button>
                     </div>
                 </div>

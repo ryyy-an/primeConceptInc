@@ -116,8 +116,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
 
             <?php include '../include/sidebar-notif.php'; ?>
 
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -200,7 +199,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
         </div>
     </nav>
 
-    <section class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+    <section id="fulfillment-container" data-orders="<?= htmlspecialchars(json_encode($fulfillmentOrders), ENT_QUOTES, 'UTF-8') ?>" class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
         <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full">
             <h2 class="text-2xl font-semibold mb-2">Orders Ready for Fulfillment</h2>
             <p class="text-gray-500">Process approved orders by picking products from inventory</p>
@@ -468,10 +467,7 @@ $fulfillmentOrders = get_fulfillment_ready_orders($pdo);
             </div>
         </div>
     </div>
-    <script>
-        // Export data for the external fulfillment script
-        window.mockOrders = <?= json_encode($fulfillmentOrders) ?>;
-    </script>
+
     <script src="../../public/assets/js/warehouse.js?v=1.2" defer></script>
     <script src="../../public/assets/js/warehouse-fulfillment.js" defer></script>
     <?php include '../include/logout-modal.php'; ?>

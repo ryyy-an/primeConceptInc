@@ -525,3 +525,107 @@ document.addEventListener("DOMContentLoaded", () => {
   // Start Online Polling
   setInterval(fetchOnlineStatus, 5000);
 });
+
+/**
+ * FACTORY RESET LOGIC
+ */
+window.handleFactoryResetSubmit = function(e) {
+    if (e) e.preventDefault();
+    goToResetStep(1);
+    toggleModal('factoryResetModal');
+    return false;
+};
+
+window.goToResetStep = function(step) {
+    const s1 = document.getElementById('resetStep1');
+    const s2 = document.getElementById('resetStep2');
+    if (!s1 || !s2) return;
+    
+    if (step === 1) {
+        s1.classList.remove('hidden');
+        s2.classList.add('hidden');
+    } else {
+        s1.classList.add('hidden');
+        s2.classList.remove('hidden');
+    }
+};
+
+window.executeFinalReset = function() {
+    const form = document.getElementById('factoryResetForm');
+    if (form) form.submit();
+};
+
+/**
+ * USERNAME EDIT & RESET VALIDATION
+ */
+window.toggleUsernameEdit = function() {
+    const input = document.getElementById('reset_username_input');
+    const btn = document.getElementById('editUsernameBtn');
+    
+    if (!input || !btn) return;
+
+    if (input.readOnly) {
+        input.readOnly = false;
+        input.classList.remove('cursor-not-allowed', 'text-gray-500', 'bg-gray-50');
+        input.classList.add('text-gray-900', 'bg-white');
+        input.focus();
+        btn.classList.add('bg-red-600', 'text-white', 'shadow-red-200');
+    } else {
+        input.readOnly = true;
+        input.classList.add('cursor-not-allowed', 'text-gray-500', 'bg-gray-50');
+        input.classList.remove('text-gray-900', 'bg-white');
+        btn.classList.remove('bg-red-600', 'text-white', 'shadow-red-200');
+    }
+}
+
+window.validateResetForm = function() {
+    const pass = document.getElementById('new_password')?.value;
+    const confirm = document.getElementById('confirm_password')?.value;
+    
+    if (pass !== confirm) {
+        if (typeof showToast === 'function') {
+            showToast("Security keys do not match! Please verify the state.", "error");
+        } else {
+            alert("Security keys do not match! Please verify the state.");
+        }
+        return false;
+    }
+    return true;
+}
+
+/**
+ * URL NOTIFICATION HANDLER
+ */
+window.handleSettingsNotifications = function(success, error) {
+    if (success) {
+        const messages = {
+            'password_reset': "Password has been successfully updated!",
+            'user_deleted': "User has been successfully removed from the system.",
+            'user_added': "New staff member has been successfully registered!",
+            'migration_complete': "Database migration and reset completed successfully!"
+        };
+        if (messages[success] && typeof showToast === 'function') {
+            showToast(messages[success], "success");
+        }
+    }
+
+    if (error) {
+        const errors = {
+            'self_delete': "You cannot delete your own account while logged in.",
+            'numeric_name': "Full name cannot contain numeric characters.",
+            'migration_failed': "Database migration failed. Please check log files."
+        };
+        const msg = errors[error] || "An error occurred processing your request.";
+        if (typeof showToast === 'function') {
+            showToast(msg, "error");
+        }
+    }
+
+    // Clean up the URL so the toast doesn't reappear on refresh
+    if (window.history.replaceState) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('success');
+        url.searchParams.delete('error');
+        window.history.replaceState({}, '', url.pathname + url.search);
+    }
+};

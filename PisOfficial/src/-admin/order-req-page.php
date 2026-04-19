@@ -48,6 +48,7 @@ if (isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="../output.css">
     <script src="../../public/assets/js/global.js?v=1.1.0" defer></script>
     <script src="../../public/assets/js/order.js?v=1.1.0" defer></script>
+    <script src="../../public/assets/js/admin-order-req.js?v=<?= time() ?>" defer></script>
     <?php include '../include/toast.php'; ?>
 
 
@@ -117,8 +118,7 @@ if (isset($_SESSION['user_id'])) {
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
                 </svg>
@@ -296,7 +296,7 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                 </div>
                             </div>
-                            <button onclick="closeReviewModal()" class="p-2 hover:bg-gray-100 text-gray-400 rounded-lg transition-all">
+                            <button data-modal-close-req class="p-2 hover:bg-gray-100 text-gray-400 rounded-lg transition-all">
                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -355,16 +355,16 @@ if (isset($_SESSION['user_id'])) {
                                             <label class="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Adjustment</label>
                                             <div class="flex bg-gray-100 rounded-lg p-0.5 border border-gray-200">
                                                 <label class="cursor-pointer">
-                                                    <input type="radio" name="discount_type" value="currency" checked onclick="toggleDiscountType()" class="hidden peer">
+                                                    <input type="radio" name="discount_type" value="currency" checked class="hidden peer">
                                                     <div class="px-3 py-1 text-[10px] font-bold text-gray-400 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm rounded-md transition-all uppercase">₱</div>
                                                 </label>
                                                 <label class="cursor-pointer">
-                                                    <input type="radio" name="discount_type" value="percentage" onclick="toggleDiscountType()" class="hidden peer">
+                                                    <input type="radio" name="discount_type" value="percentage" class="hidden peer">
                                                     <div class="px-3 py-1 text-[10px] font-bold text-gray-400 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm rounded-md transition-all uppercase">%</div>
                                                 </label>
                                             </div>
                                         </div>
-                                        <input type="number" id="admin-discount" oninput="calculateFinalTotal()" placeholder="0.00"
+                                        <input type="number" id="admin-discount" placeholder="0.00"
                                             class="w-full mt-2 bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 font-bold text-lg outline-none focus:border-red-400 transition-all shadow-inner">
                                     </div>
                                 </div>
@@ -382,11 +382,11 @@ if (isset($_SESSION['user_id'])) {
                         </div>
 
                         <div id="modal-action-footer" class="px-8 py-5 bg-white border-t border-gray-100 flex gap-3">
-                            <button id="approveBtn" onclick="handleAction('approve')"
+                            <button id="approveBtn" data-order-action="approve"
                                 class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] text-[11px] uppercase tracking-widest shadow-lg shadow-red-100">
                                 Confirm & Approve
                             </button>
-                            <button id="rejectBtn" onclick="handleAction('reject')"
+                            <button id="rejectBtn" data-order-action="reject"
                                 class="px-8 py-3.5 text-gray-500 hover:bg-gray-50 border border-gray-200 font-bold rounded-xl transition-all text-[11px] uppercase tracking-widest group relative">
                                 Reject
                                 <span id="reject-hint" class="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[9px] py-1.5 px-3 rounded-lg opacity-0 transition-opacity pointer-events-none whitespace-nowrap">
@@ -409,7 +409,7 @@ if (isset($_SESSION['user_id'])) {
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </span>
-                                <input type="text" id="history-search" autocomplete="off" oninput="handleHistoryAutocomplete(this)" placeholder="Search customer name..."
+                                <input type="text" id="history-search" autocomplete="off" placeholder="Search customer name..."
                                     class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700 outline-none focus:bg-white focus:border-red-200 focus:ring-4 focus:ring-red-50 transition-all">
                             </div>
                         </div>
@@ -453,131 +453,6 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Progressive Table Logic
-            let allRequestsData = [];
-            let displayLimit = 3;
-            let paginationPageSize = 5;
-            let currentPage = 1;
 
-            window.fetchProductRequests = function() {
-                const tbody = document.getElementById('productRequestsContent');
-                tbody.innerHTML = `<tr><td colspan="6" class="py-20 text-center"><div class="flex flex-col items-center gap-2"><div class="size-8 border-4 border-gray-100 border-t-red-600 rounded-full animate-spin"></div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading requests...</p></div></td></tr>`;
-
-                // Reusing the general report action but with All status
-                fetch(`../include/inc.admin/admin.ctrl.php?action=get_orders_report&status=All`)
-                    .then(res => res.json())
-                    .then(response => {
-                        if (response.success) {
-                            // Filter: Hidden Admin POS orders from Request review (Admin POS is pre-approved)
-                            allRequestsData = response.data.filter(row => row.creator_role !== 'admin');
-                            renderRequestsTable();
-                        }
-                    });
-            };
-
-            window.renderRequestsTable = function() {
-                const tbody = document.getElementById('productRequestsContent');
-                const footer = document.getElementById('productRequestsFooter');
-                
-                if (allRequestsData.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-20 text-center"><p class="text-[11px] font-black text-gray-300 uppercase tracking-widest">No request records found</p></td></tr>`;
-                    footer.innerHTML = '';
-                    return;
-                }
-
-                let dataToShow = [];
-                let total = allRequestsData.length;
-
-                // Logic: If limit is 3, show first 3. If limit expanded, show pagination with page size 5.
-                if (displayLimit > 3) {
-                    let start = (currentPage - 1) * paginationPageSize;
-                    let end = start + paginationPageSize;
-                    dataToShow = allRequestsData.slice(start, end);
-                } else {
-                    dataToShow = allRequestsData.slice(0, Math.min(total, displayLimit));
-                }
-
-                tbody.innerHTML = dataToShow.map(row => {
-                    const status = row.status.toLowerCase();
-                    let statusClass = '';
-                    if (status === 'approved') statusClass = 'bg-green-50 text-green-600 border-green-100';
-                    else if (status === 'rejected') statusClass = 'bg-red-50 text-red-600 border-red-100';
-                    else if (status === 'cancelled') statusClass = 'bg-orange-50 text-orange-600 border-orange-100';
-                    else if (status === 'success' || status === 'completed') statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
-                    else statusClass = 'bg-yellow-50 text-yellow-600 border-yellow-100';
-
-                    return `
-                        <tr class="hover:bg-gray-50 transition-colors group">
-                            <td class="px-6 py-5 font-bold text-red-600 font-mono text-[13px] tracking-tight">PR-${row.id}</td>
-                            <td class="px-4 py-5 text-gray-800 font-medium tracking-tight">${row.requested_by || 'System'}</td>
-                            <td class="px-4 py-5 text-gray-800 font-medium tracking-tight">${row.customer_name || 'N/A'}</td>
-                            <td class="px-4 py-5 font-mono text-sm text-gray-600">${new Date(row.created_at).toLocaleDateString()}</td>
-                            <td class="px-4 py-5 text-center">
-                                <span class="inline-block px-2 py-1 text-[10px] font-bold rounded border uppercase ${statusClass}">
-                                    ${row.status}
-                                </span>
-                            </td>
-                            <td class="px-6 py-5 text-center">
-                                <button onclick="openViewModal('${row.id}')" class="p-2 rounded-lg hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-900">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-
-                // Render Footer Controls
-                if (displayLimit === 3 && total > 3) {
-                    footer.innerHTML = `
-                        <button onclick="expandRequestsTable()" class="flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest hover:text-red-600 transition group">
-                            View More (${total})
-                            <svg class="size-4 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="3" /></svg>
-                        </button>`;
-                } else if (displayLimit > 3) {
-                    let totalPages = Math.ceil(total / paginationPageSize);
-                    let pagesHtml = '';
-                    for (let i = 1; i <= totalPages; i++) {
-                        pagesHtml += `<button onclick="goToPage(${i})" class="size-8 rounded-lg text-xs font-black transition ${currentPage === i ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100'}">${i}</button>`;
-                    }
-                    footer.innerHTML = `
-                        <div class="flex flex-col items-center gap-4">
-                            <button onclick="showLessRequests()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition group flex items-center gap-2">
-                                <svg class="size-4 group-hover:-translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" stroke-width="3" /></svg>
-                                Show Less
-                            </button>
-                            <div class="flex items-center gap-2">${pagesHtml}</div>
-                        </div>`;
-                } else {
-
-                    footer.innerHTML = '';
-                }
-            };
-
-            window.expandRequestsTable = function() {
-                displayLimit = 5; // Start showing 5 per page
-                renderRequestsTable();
-            };
-
-            window.showLessRequests = function() {
-                displayLimit = 3;
-                currentPage = 1;
-                renderRequestsTable();
-            };
-
-
-            window.goToPage = function(page) {
-                currentPage = page;
-                renderRequestsTable();
-            };
-
-            // Initial load
-            fetchProductRequests();
-        });
-    </script>
 </body>
 </html>

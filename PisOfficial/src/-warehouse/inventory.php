@@ -92,8 +92,7 @@ $pendingSR = $stats['pending_sr'];
 
             <?php include '../include/sidebar-notif.php'; ?>
 
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -193,7 +192,7 @@ $pendingSR = $stats['pending_sr'];
     </nav>
 
 
-    <section class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
+    <section id="inventory-container" class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
         <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full">
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
                 <div>
@@ -226,7 +225,8 @@ $pendingSR = $stats['pending_sr'];
                     <div class="col-span-full py-12 text-center text-gray-500 text-lg">No inventory data found.</div>
                 <?php else: ?>
                     <?php foreach ($inventory as $item): ?>
-                        <div class="card-style p-6 border border-gray-200 rounded-2xl bg-white shadow-sm relative h-full flex flex-col hover:shadow-md transition-all duration-300 product-card"
+                        <div class="card-style p-6 border border-gray-200 rounded-2xl bg-white shadow-sm relative h-full flex flex-col hover:shadow-md transition-all duration-300 product-card cursor-pointer"
+                            data-open-view-modal="<?= htmlspecialchars($item['code']) ?>"
                             data-name="<?= htmlspecialchars($item['name']) ?>"
                             data-code="<?= htmlspecialchars($item['code']) ?>" data-wh="<?= $item['total_wh'] ?>"
                             data-sr="<?= $item['total_sr'] ?>">
@@ -329,118 +329,12 @@ $pendingSR = $stats['pending_sr'];
                 </div>
                 <h3 class="text-xl font-bold text-gray-800">No matching products found</h3>
                 <p class="text-md text-gray-500 mt-2">
-                    Try adjusting your keywords or <span onclick="resetSearch()"
+                    Try adjusting your keywords or <span data-reset-search
                         class="text-red-600 font-bold cursor-pointer hover:underline active:text-red-800 active:scale-95 inline-block transition-all">clear
                         searching filter</span>
                 </p>
             </div>
 
-            <script>
-                function resetSearch() {
-                    const searchInput = document.getElementById('searchInput');
-                    if (searchInput) {
-                        searchInput.value = '';
-                        if (typeof applyPosFilters === 'function') {
-                            applyPosFilters();
-                        }
-                    }
-                }
-
-                function openViewModal(code) {
-                    const formData = new FormData();
-                    formData.append('action', 'get_product_details');
-                    formData.append('code', code);
-
-                    fetch('../include/inc.admin/admin.ctrl.php', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                const p = data.product;
-                                document.getElementById('viewCodeHeader').innerText = p.code;
-                                document.getElementById('viewName').innerText = p.name;
-                                document.getElementById('viewCategory').innerText = p.category || 'N/A';
-                                document.getElementById('viewPrice').innerText = '₱' + parseFloat(p.price).toLocaleString(undefined, {
-                                    minimumFractionDigits: 2
-                                });
-                                document.getElementById('viewDescription').innerText = p.description || 'No description available.';
-
-                                const img = p.default_image || 'default.png';
-                                document.getElementById('viewImagePreview').src = `../../public/assets/img/furnitures/${img}`;
-
-                                // Variants
-                                const container = document.getElementById('viewVariantsContainer');
-                                container.innerHTML = '';
-                                if (p.variants && p.variants.length > 0) {
-                                    p.variants.forEach(v => {
-                                        const div = document.createElement('div');
-                                        div.className = 'flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm';
-                                        div.innerHTML = `
-                                            <div class="w-12 h-12 bg-white rounded-xl border border-gray-200 flex items-center justify-center shrink-0">
-                                                <img src="../../public/assets/img/furnitures/${v.variant_image || 'default.png'}" class="object-cover w-full h-full rounded-xl" onerror="this.src='../../public/assets/img/favIcon.png'">
-                                            </div>
-                                            <div class="flex-1">
-                                                <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 leading-none">Variant Name</p>
-                                                <p class="font-bold text-gray-800 text-sm">${v.variant}</p>
-                                            </div>
-                                            <div class="text-right flex gap-3 border-l border-gray-100 pl-3">
-                                                <div>
-                                                    <p class="text-[9px] font-black text-blue-500 uppercase leading-none mb-1">WH</p>
-                                                    <p class="font-black text-blue-600 text-sm tracking-tighter">${v.v_wh || 0}</p>
-                                                </div>
-                                            </div>
-                                        `;
-                                        container.appendChild(div);
-                                    });
-                                } else {
-                                    container.innerHTML = '<p class="text-sm text-gray-400 italic">No variants available.</p>';
-                                }
-
-                                // Components
-                                const compContainer = document.getElementById('viewComponentsContainer');
-                                compContainer.innerHTML = '';
-                                if (p.components && p.components.length > 0) {
-                                    p.components.forEach(c => {
-                                        const div = document.createElement('div');
-                                        div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 shadow-sm transition-all hover:bg-white';
-                                        div.innerHTML = `
-                                            <div>
-                                                <p class="text-xs font-bold text-gray-800">${c.component_name}</p>
-                                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">Loc: ${c.location || 'N/A'}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Need</p>
-                                                <p class="text-sm font-black text-gray-900">${c.qty_needed}</p>
-                                            </div>
-                                        `;
-                                        compContainer.appendChild(div);
-                                    });
-                                } else {
-                                    compContainer.innerHTML = '<p class="text-sm text-gray-400 italic">No component recipe established.</p>';
-                                }
-
-                                openWhModal('viewModal');
-                            }
-                        })
-                        .catch(err => console.error(err));
-                }
-
-                function openWhModal(id) {
-                    const modal = document.getElementById(id);
-                    if (!modal) return;
-                    modal.classList.remove("opacity-0", "pointer-events-none");
-                    modal.classList.add("opacity-100", "pointer-events-auto");
-                }
-
-                function closeWhModal() {
-                    const modal = document.getElementById('viewModal');
-                    if (!modal) return;
-                    modal.classList.add("opacity-0", "pointer-events-none");
-                    modal.classList.remove("opacity-100", "pointer-events-auto");
-                }
-            </script>
         </div>
     </section>
 
@@ -448,7 +342,7 @@ $pendingSR = $stats['pending_sr'];
     <!-- View Product Details Modal (Read Only) -->
     <div id="viewModal"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeWhModal()"></div>
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close-wh-modal></div>
         <div
             class="relative bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-[90vh] transition-all duration-300">
             <!-- Header -->
@@ -459,7 +353,7 @@ $pendingSR = $stats['pending_sr'];
                         Warehouse View • Code: <span class="text-blue-600" id="viewCodeHeader">...</span>
                     </p>
                 </div>
-                <button onclick="closeWhModal()"
+                <button data-close-wh-modal
                     class="p-3 hover:bg-gray-100 rounded-2xl text-gray-400 hover:text-gray-900 transition-all group">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -536,7 +430,7 @@ $pendingSR = $stats['pending_sr'];
 
             <!-- Footer -->
             <div class="p-8 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
-                <button onclick="closeWhModal()"
+                <button data-close-wh-modal
                     class="px-10 py-4 bg-gray-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-gray-200">
                     Close Window
                 </button>

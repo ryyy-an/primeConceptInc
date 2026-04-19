@@ -113,8 +113,7 @@ if (isset($_SESSION['user_id'])) {
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
                 </svg>
@@ -228,7 +227,7 @@ if (isset($_SESSION['user_id'])) {
     </nav>
 
     <!-- Product Tabs -->
-    <div class="w-full px-5 flex flex-col gap-5">
+    <div id="pos-container" data-pos="<?= htmlspecialchars(json_encode(['activeTab' => $activeTab]), ENT_QUOTES, 'UTF-8') ?>" class="w-full px-5 flex flex-col gap-5">
 
         <?php
         $activeTab = isset($_GET['tab']) ? (int) $_GET['tab'] : 0;
@@ -239,7 +238,7 @@ if (isset($_SESSION['user_id'])) {
         <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
             <div class="flex items-center justify-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-full">
                 <!-- Product Catalog Tab -->
-                <button onclick="refreshAndShowTab(0)" id="tabBtn0"
+                <button data-refresh-tab="0" id="tabBtn0"
                     class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
                     <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -250,7 +249,7 @@ if (isset($_SESSION['user_id'])) {
                 </button>
 
                 <!-- Product Cart Tab -->
-                <button onclick="refreshAndShowTab(1)" id="tabBtn1"
+                <button data-refresh-tab="1" id="tabBtn1"
                     class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl text-gray-700 font-medium hover:bg-red-100 transition">
                     <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -268,40 +267,8 @@ if (isset($_SESSION['user_id'])) {
             </div>
         </div>
 
-        <script>
-            async function refreshAndShowTab(tabIndex) {
-                // 1. Instantly switch the UI tabs for a seamless feel
-                showTab(tabIndex);
-                window.history.replaceState({}, '', window.location.pathname + '?tab=' + tabIndex);
 
-                // Update badge too
-                if (typeof updateCartBadgeCount === 'function') updateCartBadgeCount();
 
-                // 2. If we are switching to the cart, silently fetch the freshest server cart data 
-                if (tabIndex === 1) {
-                    try {
-                        const response = await fetch(window.location.pathname + '?tab=1');
-                        const html = await response.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        // Replace the cart container content silently
-                        const newTab1 = doc.getElementById('tabContent1');
-                        if (newTab1) {
-                            document.getElementById('tabContent1').innerHTML = newTab1.innerHTML;
-                        }
-                    } catch (e) {
-                        console.error('Failed to sync latest cart.', e);
-                    }
-                }
-            }
-
-            // after reload, show the correct tab
-            document.addEventListener("DOMContentLoaded", () => {
-                const activeTab = <?= $activeTab ?>;
-                showTab(activeTab);
-            });
-        </script>
 
 
         <!-- Catalog -->
@@ -333,7 +300,7 @@ if (isset($_SESSION['user_id'])) {
                                 <div class="h-6 w-[1.5px] bg-gray-300 mx-2 opacity-60"></div>
 
                                 <div class="relative inline-block text-left">
-                                    <button type="button" onclick="toggleFilterMenu(event)"
+                                    <button type="button" data-toggle-filter-menu
                                         class="flex items-center justify-center w-9 h-9  text-gray-500 hover:text-red-600 active:scale-90 transition-all cursor-pointer">
                                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -345,19 +312,19 @@ if (isset($_SESSION['user_id'])) {
                                     <div id="filterMenu"
                                         class="hidden absolute left-1/2 -translate-x-1/2 mt-3 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden ring-1 ring-black/5">
                                         <div class="py-1">
-                                            <button onclick="selectFilter('all')"
+                                            <button data-select-filter="all"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📍</span>
                                                 <span class="font-medium">General</span>
                                             </button>
-                                            <button onclick="selectFilter('warehouse')"
+                                            <button data-select-filter="warehouse"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📦</span>
                                                 <span class="font-medium">Warehouse</span>
                                             </button>
-                                            <button onclick="selectFilter('showroom')"
+                                            <button data-select-filter="showroom"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">🏢</span>
@@ -480,8 +447,7 @@ if (isset($_SESSION['user_id'])) {
                                                 Out of Stock
                                             </button>
                                         <?php else: ?>
-                                            <button onclick="openProductModal('<?= $encodedProduct ?>')"
-                                                class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">
+                                            <button type="button" data-open-product-modal='<?= json_encode($p) ?>'
                                                 Add to Cart
                                             </button>
                                         <?php endif; ?>
@@ -516,7 +482,7 @@ if (isset($_SESSION['user_id'])) {
                                     <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Item
                                         Code: <span class="text-black" id="modalProductCode">EC-001</span></p>
                                 </div>
-                                <button onclick="closeModal('addToCartModal')"
+                                <button data-close-modal="addToCartModal"
                                     class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"
@@ -580,7 +546,7 @@ if (isset($_SESSION['user_id'])) {
                                             <input type="radio" name="variant" value="Matte Black"
                                                 data-img="path/to/black.png"
                                                 data-desc="Smooth matte black finish with scratch-resistant coating."
-                                                class="hidden peer" checked onchange="updateVariantDetails(this)">
+                                                class="hidden peer" checked>
 
                                             <div
                                                 class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
@@ -613,7 +579,7 @@ if (isset($_SESSION['user_id'])) {
                                             <input type="radio" name="variant" value="Wood Finish"
                                                 data-img="path/to/wood.png"
                                                 data-desc="Natural oak wood texture with a polished protective seal."
-                                                class="hidden peer" onchange="updateVariantDetails(this)">
+                                                class="hidden peer">
 
                                             <div
                                                 class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
@@ -682,11 +648,11 @@ if (isset($_SESSION['user_id'])) {
                                             Quantity</label>
                                         <div
                                             class="flex items-center bg-gray-50 border-2 border-gray-100 rounded-xl p-1.5 h-12">
-                                            <button onclick="changeQty(-1)"
+                                            <button data-change-qty="-1"
                                                 class="w-10 h-full bg-white rounded-lg font-black hover:bg-gray-100 transition-colors shadow-sm text-sm">-</button>
                                             <input type="number" id="cartQty" value="1" min="1"
                                                 class="flex-1 bg-transparent text-center font-black text-lg outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
-                                            <button onclick="changeQty(1)"
+                                            <button data-change-qty="1"
                                                 class="w-10 h-full bg-white rounded-lg font-black hover:bg-gray-100 transition-colors shadow-sm text-sm">+</button>
                                         </div>
                                         <p
@@ -697,9 +663,9 @@ if (isset($_SESSION['user_id'])) {
                             </div>
 
                             <div class="p-5 border-t border-gray-100 flex gap-3 shrink-0">
-                                <button type="button" onclick="closeModal('addToCartModal')"
+                                <button type="button" data-close-modal="addToCartModal"
                                     class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
-                                <button type="button" onclick="handleAddToCart()"
+                                <button type="button" data-handle-add-to-cart
                                     class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">Add
                                     to Cart</button>
                             </div>
@@ -775,10 +741,10 @@ if (isset($_SESSION['user_id'])) {
                                                 <td class="px-6 py-4">
                                                     <div class="flex items-center justify-center">
                                                         <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100 h-8">
-                                                            <button onclick="updateCartItem(<?= $cItem['cart_id'] ?>, <?= $cItem['qty'] - 1 ?>, <?= $cItem['available_stock'] ?>)"
+                                                            <button type="button" data-update-cart-qty="<?= $cItem['cart_id'] ?>,<?= $cItem['qty'] - 1 ?>,<?= $cItem['available_stock'] ?>"
                                                                 class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">-</button>
                                                             <span class="px-3 text-xs font-black text-gray-800"><?= $cItem['qty'] ?></span>
-                                                            <button onclick="updateCartItem(<?= $cItem['cart_id'] ?>, <?= $cItem['qty'] + 1 ?>, <?= $cItem['available_stock'] ?>)"
+                                                            <button type="button" data-update-cart-qty="<?= $cItem['cart_id'] ?>,<?= $cItem['qty'] + 1 ?>,<?= $cItem['available_stock'] ?>"
                                                                 class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">+</button>
                                                         </div>
                                                     </div>
@@ -787,7 +753,7 @@ if (isset($_SESSION['user_id'])) {
                                                     <span class="text-sm font-black text-gray-900">₱<?= number_format($itemTotal, 2) ?></span>
                                                 </td>
                                                 <td class="px-6 py-4 text-center">
-                                                    <button onclick="removeCartItem(<?= $cItem['cart_id'] ?>)"
+                                                    <button data-remove-cart-item="<?= $cItem['cart_id'] ?>"
                                                         class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer group-hover:scale-110 active:scale-95">
                                                         <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -811,7 +777,7 @@ if (isset($_SESSION['user_id'])) {
                                 </div>
 
                                 <div class="px-1">
-                                    <button type="button" onclick="openProceedModal('reviewCartModal')"
+                                    <button type="button" data-open-proceed-modal="reviewCartModal"
                                         class="group w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center gap-3">
                                         <span class="text-[11px] font-bold uppercase tracking-[0.2em]">Process
                                             Checkout</span>
@@ -849,7 +815,7 @@ if (isset($_SESSION['user_id'])) {
                                         <span id="customerBadge"
                                             class="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-600 rounded-full">New
                                             Account</span>
-                                        <button onclick="closeModalWithCheck('reviewCartModal', 'clientName')"
+                                        <button data-close-proceed-modal="reviewCartModal"
                                             class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"
@@ -908,7 +874,6 @@ if (isset($_SESSION['user_id'])) {
                                                     Authorized Person</label>
                                                 <div class="relative">
                                                     <input type="text" id="clientName" autocomplete="off"
-                                                        oninput="handleCustomerSearch(this.value)"
                                                         placeholder="Enter name..."
                                                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-semibold">
 
@@ -923,7 +888,7 @@ if (isset($_SESSION['user_id'])) {
                                             <div class="col-span-1 space-y-1.5">
                                                 <label class="text-xs font-semibold text-gray-700 ml-1">Client Type</label>
                                                 <div class="relative">
-                                                    <select id="clientType" onchange="toggleGovFields(this.value)"
+                                                    <select id="clientType"
                                                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer font-bold text-blue-600 transition-all">
                                                         <option value="private">Private / Individual</option>
                                                         <option value="government">Government</option>
@@ -970,7 +935,7 @@ if (isset($_SESSION['user_id'])) {
                                             <div class="space-y-1.5">
                                                 <label class="text-xs font-semibold text-gray-700 ml-1">Shipping
                                                     Mode</label>
-                                                <select id="shippingMode" onchange="toggleAddress(this.value)"
+                                                <select id="shippingMode"
                                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all cursor-pointer">
                                                     <option value="pickup">Store Pickup</option>
                                                     <option value="delivery">Delivery Service</option>
@@ -1002,7 +967,6 @@ if (isset($_SESSION['user_id'])) {
                                                     Type</label>
                                                 <div class="relative">
                                                     <select id="transactionType"
-                                                        onchange="toggleInstallmentView(this.value)"
                                                         class="w-full bg-gray-900 text-white border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer font-bold">
                                                         <option value="full">💰 Full Payment (One-time)</option>
                                                         <option value="installment">⏳ Installment Plan
@@ -1027,7 +991,6 @@ if (isset($_SESSION['user_id'])) {
                                                         Rate (%)</label>
                                                     <div class="relative">
                                                         <input type="number" id="interestRate" value="0"
-                                                            oninput="calculateInstallment()"
                                                             class="w-full bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold">
                                                         <span
                                                             class="absolute right-4 top-3.5 text-[10px] font-black text-blue-400">%</span>
@@ -1084,7 +1047,7 @@ if (isset($_SESSION['user_id'])) {
                                                 <div class="relative">
                                                     <span
                                                         class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-600">₱</span>
-                                                    <input type="number" id="amountPaid" oninput="calculateInstallment()"
+                                                    <input type="number" id="amountPaid"
                                                         class="w-full bg-blue-50 border border-blue-100 rounded-xl pl-8 pr-4 py-4 text-lg focus:ring-2 focus:ring-blue-500 outline-none font-black text-blue-700">
                                                 </div>
                                             </div>
@@ -1115,7 +1078,7 @@ if (isset($_SESSION['user_id'])) {
                                     </div>
                                     <button
                                         id="completeSaleBtn"
-                                        onclick="completeSale()"
+                                        data-complete-sale
                                         class="bg-red-600 text-white px-10 py-4 rounded-xl font-bold text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-200">
                                         Complete Sale
                                     </button>
@@ -1186,7 +1149,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="mt-2 text-sm font-medium text-gray-500 mb-6" id="customAlertMessage">
                 Message goes here.
             </div>
-            <button onclick="closeModal('customAlertModal')"
+            <button data-modal-close="customAlertModal"
                 class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-red-600 text-sm font-bold text-white hover:bg-red-700 transition-colors">
                 Okay, got it!
             </button>
@@ -1212,7 +1175,7 @@ if (isset($_SESSION['user_id'])) {
                 Are you sure you want to proceed?
             </div>
             <div class="flex gap-3">
-                <button onclick="closeModal('customConfirmModal')"
+                <button data-modal-close="customConfirmModal"
                     class="flex-1 inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all uppercase tracking-widest text-[10px]">
                     Cancel
                 </button>
@@ -1241,7 +1204,7 @@ if (isset($_SESSION['user_id'])) {
             <h3 class="text-xl font-black text-gray-900 tracking-tight mb-2">Unsaved Changes</h3>
             <p class="text-sm font-medium text-gray-500 mb-8 leading-relaxed">You have unsaved changes. Are you sure you want to discard them?</p>
             <div class="flex gap-3">
-                <button type="button" onclick="closeModal('discardModal')"
+                <button type="button" data-modal-close="discardModal"
                     class="flex-1 py-4 border-2 border-gray-100 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Keep Editing</button>
                 <button type="button" id="confirmDiscardBtn"
                     class="flex-1 py-4 bg-red-500 rounded-2xl font-black text-white hover:bg-gray-900 shadow-lg shadow-red-100 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
@@ -1249,6 +1212,8 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 
+        <script src="../../public/assets/js/pos.js?v=<?= time() ?>" defer></script>
+    </div>
     <?php include '../include/toast.php'; ?>
 </body>
 

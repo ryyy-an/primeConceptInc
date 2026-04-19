@@ -32,7 +32,14 @@ $_SESSION['login_success_splash'] = false;
     }
 </style>
 
-<div id="loading-splash" class="fixed inset-0 flex flex-col items-center justify-center bg-white shadow-2xl">
+<?php
+$role = $_SESSION['role'] ?? 'staff';
+$roleMsg = "Readying Account Modules";
+if ($role === 'admin') $roleMsg = "Initializing Admin Terminal";
+elseif ($role === 'showroom') $roleMsg = "Syncing Showroom Database";
+?>
+
+<div id="loading-splash" data-role-msg="<?= $roleMsg ?>" class="fixed inset-0 flex flex-col items-center justify-center bg-white shadow-2xl">
     <div class="flex flex-col items-center">
         <!-- Logo Section -->
         <div class="relative w-32 h-32 flex items-center justify-center mb-8">
@@ -57,54 +64,4 @@ $_SESSION['login_success_splash'] = false;
     </div>
 </div>
 
-<?php
-$role = $_SESSION['role'] ?? 'staff';
-$roleMsg = "Readying Account Modules";
-if ($role === 'admin') $roleMsg = "Initializing Admin Terminal";
-elseif ($role === 'showroom') $roleMsg = "Syncing Showroom Database";
-?>
-
-<script>
-    (function() {
-        const text = document.getElementById('loading-text');
-        const splash = document.getElementById('loading-splash');
-        
-        // Sequence for professional feel
-        const statusMessages = ["Synchronizing Prime", "<?= $roleMsg ?>", "Optimizing Modules", "Finalizing Interface"];
-        let index = 0;
-
-        function cycleText() {
-            if (!text) return;
-            
-            // Subtle Fade effect for text transitions
-            text.style.opacity = '0';
-            setTimeout(() => {
-                index = (index + 1) % statusMessages.length;
-                text.innerText = statusMessages[index];
-                text.style.opacity = '1';
-            }, 600);
-        }
-
-        // Cycle slower for premium feel
-        const interval = setInterval(cycleText, 2500);
-        
-        // Text initial style
-        if(text) {
-            text.style.transition = 'opacity 0.6s ease-in-out';
-            text.innerText = statusMessages[0];
-            text.style.opacity = '1';
-        }
-
-        window.addEventListener('load', () => {
-            // Allow user to see the splash for a short moment
-            setTimeout(() => {
-                clearInterval(interval);
-                if (splash) {
-                    splash.style.opacity = '0';
-                    splash.style.pointerEvents = 'none';
-                    setTimeout(() => { splash.style.display = 'none'; }, 800);
-                }
-            }, 3500);
-        });
-    })();
-</script>
+<script src="../../public/assets/js/loading.js?v=<?= time() ?>" defer></script>

@@ -94,9 +94,12 @@ async function openOrderFulfillmentModal(event, orderId) {
             } else {
                 modalSidebar.innerHTML = '<p class="p-6 text-sm text-gray-400">No products found in this order.</p>';
             }
-        } else if (data.message === 'Order not found.' && typeof window.mockOrders !== 'undefined') {
-            // MOCK FALLBACK
-            const mockMatch = window.mockOrders.find(o => o.order_id == orderId);
+        } else if (data.message === 'Order not found.') {
+            // MOCK FALLBACK from Data Attribute
+            const container = document.getElementById('fulfillment-container');
+            const rawOrders = container ? container.getAttribute('data-orders') : null;
+            const mockOrders = rawOrders ? JSON.parse(rawOrders) : [];
+            const mockMatch = mockOrders.find(o => o.order_id == orderId);
 
             if (mockMatch) {
                 currentOrder = JSON.parse(JSON.stringify(mockMatch)); // Deep clone

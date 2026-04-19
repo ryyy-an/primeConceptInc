@@ -133,8 +133,7 @@ if (isset($_SESSION["user_id"])) {
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -285,7 +284,7 @@ if (isset($_SESSION["user_id"])) {
                         <div class="h-6 w-[1.5px] bg-gray-300 mx-2 opacity-60"></div>
 
                         <div class="relative inline-block text-left">
-                            <button type="button" onclick="toggleFilterMenu(event)"
+                            <button type="button" data-toggle-filter-menu
                                 class="flex items-center justify-center w-9 h-9 rounded-xl text-gray-500 hover:bg-white hover:text-red-600 hover:shadow-sm active:scale-90 transition-all cursor-pointer">
                                 <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="2.5" stroke="currentColor">
@@ -297,19 +296,19 @@ if (isset($_SESSION["user_id"])) {
                             <div id="filterMenu"
                                 class="hidden absolute left-1/2 -translate-x-1/2 mt-3 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden ring-1 ring-black/5">
                                 <div class="py-1">
-                                    <button onclick="selectFilter('all')"
+                                    <button data-select-filter="all"
                                         class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all">
                                         <span
                                             class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📍</span>
                                         <span class="font-medium">General</span>
                                     </button>
-                                    <button onclick="selectFilter('warehouse')"
+                                    <button data-select-filter="warehouse"
                                         class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                         <span
                                             class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📦</span>
                                         <span class="font-medium">Warehouse</span>
                                     </button>
-                                    <button onclick="selectFilter('showroom')"
+                                    <button data-select-filter="showroom"
                                         class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                         <span
                                             class="mr-3 opacity-70 group-hover:scale-110 transition-transform">🏢</span>
@@ -321,7 +320,7 @@ if (isset($_SESSION["user_id"])) {
                     </div>
                 </div>
 
-                <button onclick="window.formHasUnsavedChanges = false; openModal('addProductModal')"
+                <button data-open-modal="addProductModal"
                     class="w-[17%] h-11 bg-black hover:bg-gray-800 text-white rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-all active:scale-95 shadow-lg shadow-gray-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4">
@@ -359,7 +358,7 @@ if (isset($_SESSION["user_id"])) {
                                 <?php endif; ?>
                             </div>
 
-                            <button onclick="openStockModal('<?= $item['code'] ?>')"
+                            <button data-open-stock-modal="<?= $item['code'] ?>"
                                 class="absolute bottom-2 right-2 bg-white p-2 rounded-full shadow-lg border border-gray-100 hover:bg-green-600 hover:text-white transition-all z-20 group">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -452,11 +451,11 @@ if (isset($_SESSION["user_id"])) {
                         </div>
 
                         <div class="mt-5 flex gap-2">
-                            <button onclick="openEditModal('<?= $item['code'] ?>')"
+                            <button data-open-edit-modal="<?= $item['code'] ?>"
                                 class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">Edit
                                 Details</button>
                             <button
-                                onclick="openDeleteModal('<?= htmlspecialchars($item['code']) ?>', '<?= addslashes(htmlspecialchars($item['name'])) ?>')"
+                                data-open-delete-modal="<?= htmlspecialchars($item['code']) ?>" data-product-name="<?= addslashes(htmlspecialchars($item['name'])) ?>"
                                 class="px-3 border-2 border-red-50 rounded-xl hover:bg-red-50 transition-all group">
                                 <svg class="w-5 h-5 text-red-400 group-hover:text-red-600" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
@@ -475,8 +474,7 @@ if (isset($_SESSION["user_id"])) {
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
                 <div class="absolute inset-0 bg-black/50 "></div>
 
-                <form id="editProductForm" oninput="window.formHasUnsavedChanges = true"
-                    onchange="window.formHasUnsavedChanges = true"
+                <form id="editProductForm"
                     class="modal-box relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] min-h-[90vh] transition-all duration-300 font-sans scale-95 opacity-0">
                     <input type="hidden" name="prod_id" id="editProdId">
                     <input type="hidden" name="old_code" id="editOldCode">
@@ -488,7 +486,7 @@ if (isset($_SESSION["user_id"])) {
                                     id="editCodeHeader">...</span>
                             </p>
                         </div>
-                        <button type="button" onclick="closeModalWithCheck('editModal', 'editProductForm')"
+                        <button type="button" data-close-modal-check="editModal" data-form-id="editProductForm"
                             class="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-all">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -513,7 +511,7 @@ if (isset($_SESSION["user_id"])) {
                                     <label
                                         class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer backdrop-blur-[2px]">
                                         <input type="file" name="default_image" class="hidden" accept=".jpg,.jpeg,.png"
-                                            onchange="previewImage(this, 'editImagePreview')">
+                                            data-preview-image="editImagePreview">
                                         <svg class="w-6 h-6 text-white mb-2" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path
@@ -560,9 +558,8 @@ if (isset($_SESSION["user_id"])) {
                                         </label>
 
                                         <label class="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" name="is_on_sale" id="editSaleToggle"
-                                                class="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer transition-all"
-                                                onchange="handleSaleToggle(this)">
+                                            <input type="checkbox" name="is_on_sale" id="editSaleToggle" data-sale-toggle
+                                                class="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer transition-all">
                                             <span
                                                 class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter group-hover:text-orange-500 transition-colors">
                                                 Sale Active
@@ -604,7 +601,7 @@ if (isset($_SESSION["user_id"])) {
                                 <div class="flex items-center justify-between border-b border-gray-100 pb-2">
                                     <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest">Product
                                         Component</h4>
-                                    <button type="button" onclick="addEditComponentRow()"
+                                    <button type="button" data-add-edit-comp-row
                                         class="text-[10px] font-black uppercase text-blue-600 hover:underline">+ Add
                                         Part</button>
                                 </div>
@@ -616,7 +613,7 @@ if (isset($_SESSION["user_id"])) {
                                 <div class="flex items-center justify-between border-b border-gray-100 pb-2">
                                     <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest">Style
                                         Variants</h4>
-                                    <button type="button" onclick="addEditVariantRow()"
+                                    <button type="button" data-add-edit-variant-row
                                         class="text-[10px] font-black uppercase text-blue-600 hover:underline">+ Add
                                         Variant</button>
                                 </div>
@@ -628,9 +625,9 @@ if (isset($_SESSION["user_id"])) {
                     </div>
 
                     <div class="p-6 bg-white border-t border-gray-100 flex gap-4 shrink-0">
-                        <button type="button" onclick="closeModalWithCheck('editModal', 'editProductForm')"
+                        <button type="button" data-close-modal-check="editModal" data-form-id="editProductForm"
                             class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
-                        <button type="button" onclick="handleEditSave()"
+                        <button type="button" data-save-edit
                             class="flex-1 py-2.5 bg-red-500 border-2 border-gray-100 rounded-xl font-bold text-white hover:bg-gray-900 hover:text-white transition text-xs uppercase tracking-widest">Update
                             Product</button>
                     </div>
@@ -645,7 +642,7 @@ if (isset($_SESSION["user_id"])) {
                     </svg>
                 </div>
                 <h3 class="text-lg font-bold text-gray-800">No products found</h3>
-                Try adjusting your keywords or <span onclick="resetFilters()"
+                Try adjusting your keywords or <span data-reset-filters
                     class="text-red-600 font-bold cursor-pointer hover:underline active:text-red-800 active:scale-95 inline-block transition-all">clear
                     searching filter</span>
             </div>
@@ -665,8 +662,7 @@ if (isset($_SESSION["user_id"])) {
         <div class="absolute inset-0 bg-black/50">
         </div>
 
-        <form id="addProductForm" oninput="window.formHasUnsavedChanges = true"
-            onchange="window.formHasUnsavedChanges = true"
+        <form id="addProductForm"
             class="modal-box relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] min-h-[90vh] transition-all duration-300 font-sans scale-95 opacity-0">
 
             <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
@@ -676,7 +672,7 @@ if (isset($_SESSION["user_id"])) {
                         Inventory / Product Management / Create
                     </p>
                 </div>
-                <button type="button" onclick="closeModalWithCheck('addProductModal', 'addProductForm')"
+                <button type="button" data-close-modal-check="addProductModal" data-form-id="addProductForm"
                     class="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-all">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
@@ -706,7 +702,7 @@ if (isset($_SESSION["user_id"])) {
                             <label
                                 class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center cursor-pointer backdrop-blur-[2px]">
                                 <input type="file" name="default_image" class="hidden" accept=".jpg,.jpeg,.png"
-                                    onchange="previewImage(this, 'mainImagePreview')" required>
+                                    data-preview-image="mainImagePreview" required>
                                 <p class="text-white text-[10px] font-bold uppercase tracking-widest">Upload Image</p>
                             </label>
                         </div>
@@ -763,7 +759,7 @@ if (isset($_SESSION["user_id"])) {
                         <div class="flex items-center justify-between border-b border-gray-100 pb-2">
                             <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest">Product Component
                             </h4>
-                            <button type="button" onclick="addComponentRow()"
+                            <button type="button" data-add-comp-row
                                 class="text-[10px] font-black uppercase text-blue-600 hover:underline">+ Add
                                 Part</button>
                         </div>
@@ -790,7 +786,7 @@ if (isset($_SESSION["user_id"])) {
                                         class="w-10 bg-white border border-gray-200 rounded-lg text-center font-bold text-sm py-1 outline-none"
                                         required>
                                 </div>
-                                <button type="button" onclick="this.parentElement.remove()"
+                                <button type="button" data-remove-row="component"
                                     class="text-gray-300 hover:text-red-500 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path
@@ -806,7 +802,7 @@ if (isset($_SESSION["user_id"])) {
                         <div class="flex items-center justify-between border-b border-gray-100 pb-2">
                             <h4 class="text-[11px] font-black text-gray-900 uppercase tracking-widest">Style Variants
                             </h4>
-                            <button type="button" onclick="addVariantRow()"
+                            <button type="button" data-add-variant-row
                                 class="text-[10px] font-black uppercase text-blue-600 hover:underline">+ Add
                                 Variant</button>
                         </div>
@@ -825,7 +821,7 @@ if (isset($_SESSION["user_id"])) {
                                     <label
                                         class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center cursor-pointer rounded-xl transition-all">
                                         <input type="file" name="variant_imgs[]" class="hidden"
-                                            onchange="previewVariantImage(this, 0)" required>
+                                            data-preview-variant-image="0" required>
                                         <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round"></path>
@@ -847,7 +843,7 @@ if (isset($_SESSION["user_id"])) {
                                         required>
                                 </div>
                                 <div class="flex items-center gap-2 border-l border-gray-200 pl-2">
-                                    <button type="button" onclick="this.closest('.group').remove()"
+                                    <button type="button" data-remove-row="variant"
                                         class="text-gray-300 hover:text-red-500 transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path
@@ -879,7 +875,7 @@ if (isset($_SESSION["user_id"])) {
             </datalist>
 
             <div class="p-6 bg-white border-t border-gray-100 flex gap-4 shrink-0">
-                <button type="button" onclick="closeModalWithCheck('addProductModal', 'addProductForm')"
+                <button type="button" data-close-modal-check="addProductModal" data-form-id="addProductForm"
                     class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
                 <button type="button" onclick="saveNewProduct()"
                     class="flex-1 py-2.5 bg-red-500 border-2 border-gray-100 rounded-xl font-bold text-white hover:bg-gray-900 hover:text-white transition text-xs uppercase tracking-widest">Save
@@ -940,7 +936,7 @@ if (isset($_SESSION["user_id"])) {
                             class="text-black font-black" id="stockModalName">...</span> | Code: <span
                             class="text-black font-black" id="stockModalCode">...</span></p>
                 </div>
-                <button onclick="closeModal('stockModal')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <button data-close-modal="stockModal" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                         </path>
@@ -971,7 +967,7 @@ if (isset($_SESSION["user_id"])) {
 
 
             <div class="p-6 bg-white border-t border-gray-100 flex gap-4 shrink-0">
-                <button type="button" onclick="closeModal('stockModal')"
+                <button type="button" data-close-modal="stockModal"
                     class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
                 <button type="button" id="stockUpdateBtn" onclick="handleStockUpdate()"
                     class="flex-1 py-2.5 bg-red-500 border-2 border-gray-100 rounded-xl font-bold text-white hover:bg-gray-900 hover:text-white transition text-xs uppercase tracking-widest">Update

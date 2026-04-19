@@ -1,4 +1,18 @@
-console.log("✅ script.js loaded");
+console.log("✅ global.js loaded");
+
+// Initialize Global Session Data from DOM
+(function() {
+    const sessionEl = document.getElementById('session-data');
+    if (sessionEl) {
+        try {
+            const data = JSON.parse(sessionEl.getAttribute('data-session'));
+            window.SESSION_USER_ID = data.userId;
+            window.CART_ENDPOINT = data.cartEndpoint;
+        } catch (e) {
+            console.error('Failed to parse session data', e);
+        }
+    }
+})();
 
 window.showCustomAlert = function (message) {
   const modal = document.getElementById("customAlertModal");
@@ -100,26 +114,26 @@ const modalState = {
 function showTab(index) {
   const tabs = [0, 1];
   tabs.forEach((i) => {
-    document
-      .getElementById(`tabContent${i}`)
-      .classList.toggle("hidden", i !== index);
-    document
-      .getElementById(`tabBtn${i}`)
-      .classList.toggle("bg-white", i === index);
-    document
-      .getElementById(`tabBtn${i}`)
-      .classList.toggle("border", i === index);
-    document
-      .getElementById(`tabBtn${i}`)
-      .classList.toggle("border-red-300", i === index);
-    document
-      .getElementById(`tabBtn${i}`)
-      .classList.toggle("text-red-600", i === index);
-    document
-      .getElementById(`tabBtn${i}`)
-      .classList.toggle("font-semibold", i === index);
+    const content = document.getElementById(`tabContent${i}`);
+    const btn = document.getElementById(`tabBtn${i}`);
+    
+    if (content) content.classList.toggle("hidden", i !== index);
+    if (btn) {
+      btn.classList.toggle("bg-white", i === index);
+      btn.classList.toggle("border", i === index);
+      btn.classList.toggle("border-red-300", i === index);
+      btn.classList.toggle("text-red-600", i === index);
+      btn.classList.toggle("font-semibold", i === index);
+      
+      // Secondary state visibility for inactive tabs
+      if (i !== index) {
+          btn.classList.remove("font-semibold", "text-red-600");
+          btn.classList.add("font-medium", "text-gray-700");
+      }
+    }
   });
 }
+window.showTab = showTab;
 
 // =========================
 // Shared modal state & logic
@@ -180,41 +194,55 @@ window.closeModalWithCheck = function (modalId, formId) {
 // Add this for your quantity buttons
 function changeQty(val) {
   const input = document.getElementById("cartQty");
+  if (!input) return;
   let current = parseInt(input.value);
+  
+  // If we have strict stock checking active
+  if (modalState.selectedVariant && modalState.selectedLocation) {
+      const stocks = modalState.stockMap[modalState.selectedVariant];
+      const maxStock = modalState.selectedLocation === "SR" ? stocks.sr : stocks.wh;
+      if (val > 0 && current >= maxStock) {
+        showCustomAlert("Cannot exceed available stocks.");
+        return;
+      }
+  }
+
   if (current + val >= 1) {
     input.value = current + val;
   }
 }
+window.changeQty = changeQty;
 
 // ==========================================
 // POS & INVENTORY SHARED SCRIPTS
 // ==========================================
 
 /** * FILTERING LOGIC
- * Merged from both branches to handle POS cards and Inventory tables
  */
 let activePosFilter = "all";
 
 function toggleFilterMenu(event) {
-  event.stopPropagation();
+  if (event) event.stopPropagation();
   const menu = document.getElementById("filterMenu");
   if (menu) menu.classList.toggle("hidden");
 }
+window.toggleFilterMenu = toggleFilterMenu;
 
 function selectFilter(value) {
   activePosFilter = value;
 
-  // Trigger Inventory-specific filter if function exists (devRyan)
+  // Trigger Inventory-specific filter if function exists
   if (typeof filterInventory === "function") {
     filterInventory(value);
   }
 
-  // Trigger POS-specific filter (main)
+  // Trigger POS-specific filter
   applyPosFilters();
 
   const menu = document.getElementById("filterMenu");
   if (menu) menu.classList.add("hidden");
 }
+window.selectFilter = selectFilter;
 
 function applyPosFilters() {
   const searchEl = document.getElementById("searchInput");
@@ -257,21 +285,10 @@ function applyPosFilters() {
     }
   }
 }
-
-// Close menu when clicking outside
-window.addEventListener("click", function (event) {
-  const menu = document.getElementById("filterMenu");
-  if (
-    menu &&
-    !event.target.closest(".inline-block") &&
-    !event.target.closest("#filterMenu")
-  ) {
-    menu.classList.add("hidden");
-  }
-});
+window.applyPosFilters = applyPosFilters;
 
 /**
- * LOGOUT MODAL (devRyan)
+ * LOGOUT MODAL
  */
 window.toggleLogoutModal = function (show) {
   if (show) {
@@ -316,15 +333,12 @@ window.handleLogout = async function () {
         </div>
     `;
 
-  // Wait for 1.2s for dramatic effect
   await new Promise((r) => setTimeout(r, 1200));
-
-  // Redirect to logout endpoint
   window.location.href = "../auth/logout.auth.php";
 }
 
 /**
- * POS DYNAMIC MODAL & CART (main)
+ * POS DYNAMIC MODAL & CART
  */
 function openProductModal(encodedProduct) {
   try {
@@ -356,7 +370,7 @@ function openProductModal(encodedProduct) {
         <label class="cursor-pointer group">
             <input type="radio" name="variant" value="${v.id}"
                 data-desc="Location: ${v.loc}"
-                class="hidden peer" ${isChecked} onchange="updateVariantDetails(this)">
+                class="hidden peer" ${isChecked} data-update-variant-details>
             <div class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white rounded-xl border border-gray-100 p-1.5 shrink-0 shadow-sm">
@@ -377,16 +391,14 @@ function openProductModal(encodedProduct) {
       variantList.insertAdjacentHTML("beforeend", html);
     });
 
-    document.querySelector('input[name="source"][value="SR"]').checked = true;
+    const srRadio = document.querySelector('input[name="source"][value="SR"]');
+    if (srRadio) srRadio.checked = true;
     modalState.selectedLocation = "SR";
 
     if (product.variants[0]) updateVariantStocks(product.variants[0].id);
 
     document.querySelectorAll('input[name="source"]').forEach((radio) => {
-      radio.addEventListener("change", (e) => {
-        modalState.selectedLocation = e.target.value;
-        document.getElementById("cartQty").value = 1;
-      });
+        // We handle this via delegation in DOMContentLoaded
     });
 
     document.getElementById("cartQty").value = 1;
@@ -395,248 +407,116 @@ function openProductModal(encodedProduct) {
     console.error("Failed to parse product data", err);
   }
 }
+window.openProductModal = openProductModal;
 
 function updateVariantDetails(el) {
   const variantId = el.value;
   modalState.selectedVariant = parseInt(variantId);
-  document.getElementById("variantDesc").innerText =
-    el.getAttribute("data-desc") || "No description.";
+  const descEl = document.getElementById("variantDesc");
+  if (descEl) descEl.innerText = el.getAttribute("data-desc") || "No description.";
   updateVariantStocks(variantId);
-  document.getElementById("cartQty").value = 1;
+  const qtyInput = document.getElementById("cartQty");
+  if (qtyInput) qtyInput.value = 1;
 }
+window.updateVariantDetails = updateVariantDetails;
 
 function updateVariantStocks(variantId) {
   const s = modalState.stockMap[variantId];
   if (!s) return;
-  const srLabel = document
-    .querySelector('input[name="source"][value="SR"]')
-    .nextElementSibling.querySelector(".text-orange-300, .text-orange-500");
-  const whLabel = document
-    .querySelector('input[name="source"][value="WH"]')
-    .nextElementSibling.querySelector(".text-blue-300, .text-blue-500");
-  if (srLabel) srLabel.innerText = s.sr + " Stock";
-  if (whLabel) whLabel.innerText = s.wh + " Stock";
-}
-
-window.changeQty = function (val) {
-  const input = document.getElementById("cartQty");
-  let current = parseInt(input.value);
-  if (!modalState.selectedVariant || !modalState.selectedLocation) {
-    if (current + val >= 1) input.value = current + val;
-    return;
+  const srRadio = document.querySelector('input[name="source"][value="SR"]');
+  const whRadio = document.querySelector('input[name="source"][value="WH"]');
+  
+  if (srRadio) {
+      const srLabel = srRadio.nextElementSibling.querySelector(".text-orange-300, .text-orange-500");
+      if (srLabel) srLabel.innerText = s.sr + " Stock";
   }
-  const stocks = modalState.stockMap[modalState.selectedVariant];
-  const maxStock = modalState.selectedLocation === "SR" ? stocks.sr : stocks.wh;
-  if (val > 0 && current >= maxStock) {
-    showCustomAlert("Cannot exceed available stocks.");
-    return;
-  }
-  if (current + val >= 1) input.value = current + val;
-};
-
-async function handleAddToCart() {
-  const btn = document.querySelector(
-    '#addToCartModal button[onclick="handleAddToCart()"]',
-  );
-  const originalText = btn ? btn.innerText : "Add to Cart";
-
-  const variantId = modalState.selectedVariant;
-  const qty = parseInt(document.getElementById("cartQty").value);
-  const source = modalState.selectedLocation;
-  const stocks = modalState.stockMap[variantId];
-  const maxStock = source === "SR" ? stocks.sr : stocks.wh;
-
-  if (qty > maxStock)
-    return showCustomAlert(
-      "Cannot add more than available stock (" + maxStock + ").",
-    );
-
-  // Step 1: Start 'Adding...' state (High Visibility)
-  if (btn) {
-    btn.disabled = true;
-    btn.classList.add("opacity-80", "cursor-not-allowed", "bg-gray-800");
-
-    // Injecting a local style for the spinner (Pure CSS Border Spinner)
-    if (!document.getElementById("spinner-style")) {
-      const style = document.createElement("style");
-      style.id = "spinner-style";
-      style.innerHTML = `
-              @keyframes spin-pure {
-                  to { transform: rotate(360deg); }
-              }
-              .pure-spinner {
-                  width: 18px;
-                  height: 18px;
-                  border: 3px solid rgba(255,255,255,0.3);
-                  border-top-color: #fff;
-                  border-radius: 50%;
-                  animation: spin-pure 0.8s linear infinite;
-              }
-          `;
-      document.head.appendChild(style);
-    }
-
-    btn.innerHTML = `
-        <div class="flex items-center justify-center gap-3">
-            <div class="pure-spinner"></div>
-            <span class="tracking-widest uppercase text-[11px]">Processing...</span>
-        </div>`;
-  }
-
-  const startTime = Date.now();
-  const url =
-    (typeof CART_ENDPOINT !== "undefined"
-      ? CART_ENDPOINT
-      : "../include/inc.admin/admin.ctrl.php") + "?action=add_to_cart";
-  const formData = new FormData();
-  formData.append("variant_id", variantId);
-  formData.append("qty", qty);
-  formData.append("source", source);
-
-  try {
-    const res = await fetch(url, { method: "POST", body: formData });
-    const data = await res.json();
-
-    // Ensure at least 1 second has passed
-    const elapsed = Date.now() - startTime;
-    if (elapsed < 1000) await new Promise((r) => setTimeout(r, 1000 - elapsed));
-
-    if (data.success) {
-      closeModal("addToCartModal");
-
-      // Delay toast slightly to ensure modal is clearing
-      setTimeout(() => {
-        if (typeof window.showToast === "function") {
-          const productName = modalState.product ? modalState.product.name : "Product";
-          window.showToast(`${productName} successfully added to the cart`, "success");
-        } else if (typeof showCustomSuccess === "function") {
-          showCustomSuccess("Product added to cart successfully!");
-        } else {
-          showCustomSuccess("Product added to cart successfully!");
-        }
-      }, 300);
-
-      if (typeof populateOrderSummary === "function") populateOrderSummary();
-      if (typeof updateCartBadgeCount === "function") updateCartBadgeCount();
-    } else {
-      showCustomAlert(data.message || "Failed to add to cart.");
-    }
-  } catch (err) {
-    console.error(err);
-    showCustomAlert("A network error occurred.");
-  } finally {
-    // Re-enable button & Reset appearance
-    if (btn) {
-      btn.disabled = false;
-      btn.classList.remove("opacity-80", "cursor-not-allowed", "bg-gray-800");
-      btn.innerText = originalText;
-    }
+  if (whRadio) {
+      const whLabel = whRadio.nextElementSibling.querySelector(".text-blue-300, .text-blue-500");
+      if (whLabel) whLabel.innerText = s.wh + " Stock";
   }
 }
+window.updateVariantStocks = updateVariantStocks;
+
+// ==========================================
+// GLOBAL EVENT DELEGATION
+// ==========================================
+document.addEventListener('click', (e) => {
+    const target = e.target;
+
+    // Logout Modal
+    if (target.closest('.logout-trigger')) {
+        e.preventDefault();
+        window.toggleLogoutModal(true);
+        return;
+    }
+    if (target.closest('.logout-close')) {
+        e.preventDefault();
+        window.toggleLogoutModal(false);
+        return;
+    }
+    if (target.id === 'confirmLogoutBtn') {
+        window.handleLogout();
+        return;
+    }
+
+    // Modal Operations
+    const openBtn = target.closest('[data-open-modal]');
+    if (openBtn) {
+        window.openModal(openBtn.getAttribute('data-open-modal'));
+        return;
+    }
+    const closeBtn = target.closest('[data-close-modal]');
+    if (closeBtn) {
+        window.closeModal(closeBtn.getAttribute('data-close-modal'));
+        return;
+    }
+
+    // Filter Menu
+    if (target.closest('[data-toggle-filter-menu]')) {
+        toggleFilterMenu(e);
+        return;
+    }
+    const filterBtn = target.closest('[data-select-filter]');
+    if (filterBtn) {
+        selectFilter(filterBtn.getAttribute('data-select-filter'));
+        return;
+    }
+
+    // Quantity Controls
+    const qtyBtn = target.closest('[data-change-qty]');
+    if (qtyBtn) {
+        changeQty(parseInt(qtyBtn.getAttribute('data-change-qty')));
+        return;
+    }
+});
+
+document.addEventListener('change', (e) => {
+    const target = e.target;
+
+    // Source selection in product modal
+    if (target.name === 'source' && ['SR', 'WH'].includes(target.value)) {
+        modalState.selectedLocation = target.value;
+        const qtyInput = document.getElementById("cartQty");
+        if (qtyInput) qtyInput.value = 1;
+        return;
+    }
+
+    // Variant Selection
+    if (target.name === 'variant' && target.hasAttribute('data-update-variant-details')) {
+        updateVariantDetails(target);
+        return;
+    }
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("searchInput");
   if (searchInput) searchInput.addEventListener("input", applyPosFilters);
+
+  // Close filter menu when clicking outside
+  window.addEventListener("click", function (event) {
+    const menu = document.getElementById("filterMenu");
+    if (menu && !event.target.closest(".inline-block") && !event.target.closest("#filterMenu") && !event.target.closest('[data-toggle-filter-menu]')) {
+      menu.classList.add("hidden");
+    }
+  });
 });
-
-window.removeCartItem = function (cartId) {
-  showCustomConfirm(
-    "Are you sure you want to remove this item from your cart?",
-    () => {
-      executeRemoveCartItem(cartId);
-    },
-  );
-};
-
-async function executeRemoveCartItem(cartId) {
-  const url = "../include/global.ctrl.php";
-  const formData = new FormData();
-  formData.append("action", "delete_cart_item");
-  formData.append("cart_id", cartId);
-
-  try {
-    const res = await fetch(url, { method: "POST", body: formData });
-    const data = await res.json();
-    if (data.success) {
-      if (typeof updateCartBadgeCount === "function") updateCartBadgeCount();
-      if (typeof refreshAndShowTab === "function") {
-        refreshAndShowTab(1);
-      } else {
-        window.location.href = window.location.pathname + "?tab=1";
-      }
-    } else {
-      showCustomAlert(data.message || "Failed to remove item.");
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-/**
- * Dynamic Cart Badge Update
- */
-window.updateCartBadgeCount = async function () {
-  const badges = document.querySelectorAll(".cart-badge");
-  if (badges.length === 0) return;
-
-  try {
-    const res = await fetch("../include/global.ctrl.php?action=get_cart_items");
-    const data = await res.json();
-    if (data.success) {
-      const count = data.items ? data.items.length : 0;
-      badges.forEach((badge) => {
-        badge.innerText = count;
-        if (count > 0) {
-          badge.classList.remove("hidden");
-          badge.classList.add("flex");
-        } else {
-          badge.classList.remove("flex");
-          badge.classList.add("hidden");
-        }
-      });
-    }
-  } catch (err) {
-    console.error("Badge update error:", err);
-  }
-};
-
-// Initial sync on load
-document.addEventListener("DOMContentLoaded", () => {
-  window.updateCartBadgeCount();
-});
-
-window.updateCartItem = async function (cartId, qty, maxStock = 99999) {
-  if (qty < 1) {
-    window.removeCartItem(cartId);
-    return;
-  }
-
-  if (qty > maxStock) {
-    showCustomAlert("Cannot exceed available stocks (" + maxStock + ").");
-    return;
-  }
-
-  // Proceed with the update
-  const url = "../include/global.ctrl.php";
-  const formData = new FormData();
-  formData.append("action", "update_cart_qty");
-  formData.append("cart_id", cartId);
-  formData.append("qty", qty);
-
-  try {
-    const res = await fetch(url, { method: "POST", body: formData });
-    const data = await res.json();
-    if (data.success) {
-      if (typeof updateCartBadgeCount === "function") updateCartBadgeCount();
-      if (typeof refreshAndShowTab === "function") {
-        refreshAndShowTab(1);
-      } else {
-        window.location.href = window.location.pathname + "?tab=1";
-      }
-    } else {
-      showCustomAlert(data.message || "Failed to update item quantity.");
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};

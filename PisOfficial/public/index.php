@@ -11,7 +11,7 @@ require_once '../src/auth/login.view.auth.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="assets/img/favIcon.png">
     <link rel="stylesheet" href="../src/output.css">
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <script src="assets/js/auth.js?v=<?= time() ?>" defer></script>
 
 </head>
 
@@ -86,33 +86,7 @@ require_once '../src/auth/login.view.auth.php';
                     }
                 </style>
 
-                <script>
-                    function togglePassword() {
-                        const passwordInput = document.getElementById('password');
-                        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                        passwordInput.setAttribute('type', type);
-                    }
 
-                    document.getElementById('loginForm').addEventListener('submit', function(e) {
-                        const btn = document.getElementById('loginBtn');
-                        if (btn.disabled) return; // Prevent double click
-
-                        e.preventDefault();
-                        
-                        // Start Loading
-                        btn.disabled = true;
-                        btn.classList.add('opacity-80', 'cursor-not-allowed', 'bg-gray-800');
-                        btn.innerHTML = `
-                            <div class="pure-spinner"></div>
-                            <span class="tracking-widest uppercase text-[11px]">Logging in...</span>
-                        `;
-
-                        // Wait for 1.2 seconds for dramatic effect before actual submit
-                        setTimeout(() => {
-                            this.submit();
-                        }, 1200);
-                    });
-                </script>
             </div>
         </div>
 

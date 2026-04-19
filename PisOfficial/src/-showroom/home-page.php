@@ -115,8 +115,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
 
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -223,7 +222,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
         <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6">
             <div class="flex items-center justify-center bg-gray-100 rounded-3xl px-1 py-1 gap-5 shadow-sm w-full">
                 <!-- Product Catalog Tab -->
-                <button onclick="refreshAndShowTab(0)" id="tabBtn0"
+                <button data-refresh-tab="0" id="tabBtn0"
                     class="w-full flex-center h-10 gap-2 px-4 rounded-3xl bg-white border border-gray-300 text-red-600 font-semibold hover:bg-red-100 transition">
                     <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -234,7 +233,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                 </button>
 
                 <!-- Product Cart Tab -->
-                <button onclick="refreshAndShowTab(1)" id="tabBtn1"
+                <button data-refresh-tab="1" id="tabBtn1"
                     class="relative flex items-center justify-center w-full gap-2 h-10 px-4 rounded-3xl text-gray-700 font-medium hover:bg-red-100 transition">
 
                     <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -282,7 +281,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                 <div class="h-6 w-[1.5px] bg-gray-300 mx-2 opacity-60"></div>
 
                                 <div class="relative inline-block text-left">
-                                    <button type="button" onclick="toggleFilterMenu(event)"
+                                    <button type="button" data-toggle-filter-menu
                                         class="flex items-center justify-center w-9 h-9  text-gray-500 hover:text-red-600 active:scale-90 transition-all cursor-pointer">
                                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -294,19 +293,19 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                     <div id="filterMenu"
                                         class="hidden absolute left-1/2 -translate-x-1/2 mt-3 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden ring-1 ring-black/5">
                                         <div class="py-1">
-                                            <button onclick="selectFilter('all')"
+                                            <button data-select-filter="all"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📍</span>
                                                 <span class="font-medium">General</span>
                                             </button>
-                                            <button onclick="selectFilter('warehouse')"
+                                            <button data-select-filter="warehouse"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">📦</span>
                                                 <span class="font-medium">Warehouse</span>
                                             </button>
-                                            <button onclick="selectFilter('showroom')"
+                                            <button data-select-filter="showroom"
                                                 class="group flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 border-t border-gray-100 transition-all">
                                                 <span
                                                     class="mr-3 opacity-70 group-hover:scale-110 transition-transform">🏢</span>
@@ -466,7 +465,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                                 Out of Stock
                                             </button>
                                         <?php else: ?>
-                                            <button onclick="openProductModal('<?= $encodedProduct ?>')"
+                                            <button data-open-product-modal="<?= $encodedProduct ?>"
                                                 class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">
                                                 Add to Cart
                                             </button>
@@ -505,7 +504,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                     <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Item
                                         Code: <span class="text-black" id="modalProductCode">EC-001</span></p>
                                 </div>
-                                <button onclick="closeModal('addToCartModal')"
+                                <button data-close-modal="addToCartModal"
                                     class="p-2 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-gray-50">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round"
@@ -569,7 +568,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                             <input type="radio" name="variant" value="Matte Black"
                                                 data-img="../../public/assets/img/furnitures/default-placeholder.png"
                                                 data-desc="Smooth matte black finish with scratch-resistant coating."
-                                                class="hidden peer" checked onchange="updateVariantDetails(this)">
+                                                class="hidden peer" checked data-update-variant-details>
 
                                             <div
                                                 class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
@@ -602,7 +601,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                             <input type="radio" name="variant" value="Wood Finish"
                                                 data-img="../../public/assets/img/furnitures/default-placeholder.png"
                                                 data-desc="Natural oak wood texture with a polished protective seal."
-                                                class="hidden peer" onchange="updateVariantDetails(this)">
+                                                class="hidden peer" data-update-variant-details>
 
                                             <div
                                                 class="p-2.5 border-2 border-gray-100 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/30 transition-all flex items-center justify-between shadow-sm hover:border-gray-200">
@@ -671,11 +670,11 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                             Quantity</label>
                                         <div
                                             class="flex items-center bg-gray-50 border-2 border-gray-100 rounded-xl p-1.5 h-12">
-                                            <button onclick="changeQty(-1)"
+                                            <button data-change-qty="-1"
                                                 class="w-10 h-full bg-white rounded-lg font-black hover:bg-gray-100 transition-colors shadow-sm text-sm">-</button>
                                             <input type="number" id="cartQty" value="1" min="1"
                                                 class="flex-1 bg-transparent text-center font-black text-lg outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
-                                            <button onclick="changeQty(1)"
+                                            <button data-change-qty="1"
                                                 class="w-10 h-full bg-white rounded-lg font-black hover:bg-gray-100 transition-colors shadow-sm text-sm">+</button>
                                         </div>
                                         <p
@@ -686,9 +685,9 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                             </div>
 
                             <div class="p-5 border-t border-gray-100 flex gap-3 shrink-0">
-                                <button type="button" onclick="closeModal('addToCartModal')"
+                                <button type="button" data-close-modal="addToCartModal"
                                     class="flex-1 py-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">Discard</button>
-                                <button type="button" onclick="handleAddToCart()"
+                                <button type="button" data-handle-add-to-cart
                                     class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center cursor-pointer">Add
                                     to Cart</button>
                             </div>
@@ -764,10 +763,10 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                                 <td class="px-6 py-4">
                                                     <div class="flex items-center justify-center">
                                                         <div class="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100 h-8">
-                                                            <button onclick="updateCartItem(<?= $cItem['cart_id'] ?>, <?= $cItem['qty'] - 1 ?>, <?= $cItem['available_stock'] ?>)"
+                                                            <button type="button" data-update-cart-qty="<?= $cItem['cart_id'] ?>,<?= $cItem['qty'] - 1 ?>,<?= $cItem['available_stock'] ?>"
                                                                 class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">-</button>
                                                             <span class="px-3 text-xs font-black text-gray-800"><?= $cItem['qty'] ?></span>
-                                                            <button onclick="updateCartItem(<?= $cItem['cart_id'] ?>, <?= $cItem['qty'] + 1 ?>, <?= $cItem['available_stock'] ?>)"
+                                                            <button type="button" data-update-cart-qty="<?= $cItem['cart_id'] ?>,<?= $cItem['qty'] + 1 ?>,<?= $cItem['available_stock'] ?>"
                                                                 class="w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-white hover:shadow-sm rounded transition-all cursor-pointer">+</button>
                                                         </div>
                                                     </div>
@@ -776,7 +775,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                                     <span class="text-sm font-black text-gray-900">₱<?= number_format($itemTotal, 2) ?></span>
                                                 </td>
                                                 <td class="px-6 py-4 text-center">
-                                                    <button onclick="removeCartItem(<?= $cItem['cart_id'] ?>)"
+                                                    <button data-remove-cart-item="<?= $cItem['cart_id'] ?>"
                                                         class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer group-hover:scale-110 active:scale-95">
                                                         <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -800,7 +799,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                 </div>
 
                                 <div class="px-1">
-                                    <button type="button" onclick="openProceedModal('reviewCartModal')"
+                                    <button type="button" data-open-proceed-modal="reviewCartModal"
                                         class="group w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl transition-all shadow-lg shadow-red-100 active:scale-[0.98] flex items-center justify-center gap-3">
                                         <span class="text-[11px] font-bold uppercase tracking-[0.2em]">Place Order
                                             Request</span>
@@ -837,7 +836,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                     </div>
                                 </div>
 
-                                <button onclick="closeProceedModal('reviewCartModal')"
+                                <button data-close-proceed-modal="reviewCartModal"
                                     class="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -882,11 +881,11 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                                 </div>
 
                                 <div class="flex gap-3">
-                                    <button onclick="closeProceedModal('reviewCartModal')"
+                                    <button data-close-proceed-modal="reviewCartModal"
                                         class="py-4 px-8 border-2 border-gray-200 rounded-2xl font-bold text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 uppercase text-[10px] tracking-[0.2em]">
                                         Cancel
                                     </button>
-                                    <button id="placeRequestBtn" onclick="submitOrderRequest()"
+                                    <button id="placeRequestBtn"
                                         class="bg-red-600 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200/50 active:scale-95">
                                         Place Request
                                     </button>
@@ -907,7 +906,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
     <!-- Custom Alert Modal -->
     <div id="customAlertModal"
         class="fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="absolute inset-0 bg-black/40 backdrop" onclick="closeModal('customAlertModal')"></div>
+        <div class="absolute inset-0 bg-black/40 backdrop" data-close-modal="customAlertModal"></div>
         <div
             class="modal-box relative bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 font-sans p-6 text-center">
             <div
@@ -922,7 +921,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
             <div class="mt-2 text-sm font-medium text-gray-500 mb-6" id="customAlertMessage">
                 Message goes here.
             </div>
-            <button onclick="closeModal('customAlertModal')"
+            <button data-close-modal="customAlertModal"
                 class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-red-600 text-sm font-bold text-white hover:bg-red-700 transition-colors">
                 Okay, got it!
             </button>
@@ -932,7 +931,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
     <!-- Custom Confirm Modal -->
     <div id="customConfirmModal"
         class="fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="absolute inset-0 bg-black/40 backdrop" onclick="closeModal('customConfirmModal')"></div>
+        <div class="absolute inset-0 bg-black/40 backdrop" data-close-modal="customConfirmModal"></div>
         <div
             class="modal-box relative bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 font-sans p-6 text-center">
             <div
@@ -948,7 +947,7 @@ $pendingRequests = $stats['pending_requests'] ?? 0;
                 Message goes here.
             </div>
             <div class="flex gap-3">
-                <button onclick="closeModal('customConfirmModal')"
+                <button data-close-modal="customConfirmModal"
                     class="w-full inline-flex justify-center rounded-xl border border-gray-200 shadow-sm px-4 py-3.5 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancel
                 </button>

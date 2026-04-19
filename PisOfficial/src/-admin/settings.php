@@ -132,8 +132,7 @@ function getInitials($name)
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
                 </svg>
@@ -249,43 +248,7 @@ function getInitials($name)
                     <!-- System Toast Notification Triggers -->
 
                     <!-- System Toast Notification Triggers -->
-                    <?php if (isset($_GET['success']) || isset($_GET['error'])): ?>
-                        <script>
-                            window.addEventListener('DOMContentLoaded', () => {
-                                <?php if (isset($_GET['success'])): ?>
-                                    <?php if ($_GET['success'] === 'password_reset'): ?>
-                                        showToast("Password has been successfully updated!", "success");
-                                    <?php elseif ($_GET['success'] === 'user_deleted'): ?>
-                                        showToast("User has been successfully removed from the system.", "success");
-                                    <?php elseif ($_GET['success'] === 'user_added'): ?>
-                                        showToast("New staff member has been successfully registered!", "success");
-                                    <?php elseif ($_GET['success'] === 'migration_complete'): ?>
-                                        showToast("Database migration and reset completed successfully!", "success");
-                                    <?php endif; ?>
-                                <?php endif; ?>
-
-                                <?php if (isset($_GET['error'])): ?>
-                                    <?php if ($_GET['error'] === 'self_delete'): ?>
-                                        showToast("You cannot delete your own account while logged in.", "error");
-                                    <?php elseif ($_GET['error'] === 'numeric_name'): ?>
-                                        showToast("Full name cannot contain numeric characters.", "error");
-                                    <?php elseif ($_GET['error'] === 'migration_failed'): ?>
-                                        showToast("Database migration failed. Please check log files.", "error");
-                                    <?php else: ?>
-                                        showToast("An error occurred processing your request.", "error");
-                                    <?php endif; ?>
-                                <?php endif; ?>
-
-                                // Clean up the URL so the toast doesn't reappear on refresh
-                                if (window.history.replaceState) {
-                                    const url = new URL(window.location.href);
-                                    url.searchParams.delete('success');
-                                    url.searchParams.delete('error');
-                                    window.history.replaceState({}, '', url.pathname);
-                                }
-                            });
-                        </script>
-                    <?php endif; ?>
+                    <div id="toast-config" class="hidden"></div>
                     <button onclick="window.formHasUnsavedChanges = false; openModal('registrationModal')"
                         class="flex items-center gap-2 bg-red-600 hover:bg-gray-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-100 active:scale-95 group">
                         <svg class="size-4 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -551,36 +514,6 @@ function getInitials($name)
                     </div>
                 </div>
 
-                <script>
-                    window.toggleUsernameEdit = function() {
-                        const input = document.getElementById('reset_username_input');
-                        const btn = document.getElementById('editUsernameBtn');
-                        
-                        if (input.readOnly) {
-                            input.readOnly = false;
-                            input.classList.remove('cursor-not-allowed', 'text-gray-500', 'bg-gray-50');
-                            input.classList.add('text-gray-900', 'bg-white');
-                            input.focus();
-                            btn.classList.add('bg-red-600', 'text-white', 'shadow-red-200');
-                        } else {
-                            input.readOnly = true;
-                            input.classList.add('cursor-not-allowed', 'text-gray-500', 'bg-gray-50');
-                            input.classList.remove('text-gray-900', 'bg-white');
-                            btn.classList.remove('bg-red-600', 'text-white', 'shadow-red-200');
-                        }
-                    }
-
-                    window.validateResetForm = function() {
-                        const pass = document.getElementById('new_password').value;
-                        const confirm = document.getElementById('confirm_password').value;
-                        
-                        if (pass !== confirm) {
-                            alert("Security keys do not match! Please verify the state.");
-                            return false;
-                        }
-                        return true;
-                    }
-                </script>
             </div>
 
 
@@ -802,35 +735,6 @@ function getInitials($name)
                 </div>
             </div>
 
-            <script>
-                window.handleFactoryResetSubmit = function(e) {
-                    e.preventDefault();
-                    goToResetStep(1);
-                    openModal('factoryResetModal');
-                    return false;
-                };
-
-                window.goToResetStep = function(step) {
-                    const s1 = document.getElementById('resetStep1');
-                    const s2 = document.getElementById('resetStep2');
-                    if (step === 1) {
-                        s1.classList.remove('hidden');
-                        s2.classList.add('hidden');
-                    } else {
-                        s1.classList.add('hidden');
-                        s2.classList.remove('hidden');
-                    }
-                };
-
-                window.executeFinalReset = function() {
-                    document.getElementById('factoryResetForm').submit();
-                };
-
-                function confirmFactoryReset() {
-                    // Deprecated - using factoryResetModal instead
-                    return false;
-                }
-            </script>
 </body>
 
 </html>

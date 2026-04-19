@@ -15,7 +15,7 @@ let originalRequesterName = ""; // Used to remember the current order's requeste
 /**
  * Opens the Cart Table Modal with a scale-up animation
  */
-function openProceedModal(id) {
+window.openProceedModal = function(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
 
@@ -27,27 +27,29 @@ function openProceedModal(id) {
     }
 
     modal.classList.remove("opacity-0", "pointer-events-none");
+    modal.classList.add("opacity-100", "pointer-events-auto");
     if (box) {
-        box.classList.remove("scale-95");
-        box.classList.add("scale-100");
+        box.classList.remove("scale-95", "opacity-0");
+        box.classList.add("scale-100", "opacity-100");
     }
-}
+};
 
 /**
  * Closes the Cart Table with a scale-down animation
  */
-function closeProceedModal(id) {
+window.closeProceedModal = function(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
 
     const box = modal.querySelector(".modal-box");
 
     modal.classList.add("opacity-0", "pointer-events-none");
+    modal.classList.remove("opacity-100", "pointer-events-auto");
     if (box) {
-        box.classList.remove("scale-100");
-        box.classList.add("scale-95");
+        box.classList.add("scale-95", "opacity-0");
+        box.classList.remove("scale-100", "opacity-100");
     }
-}
+};
 
 /**
  * Fetches cart items and renders them into the summary modal
@@ -112,13 +114,10 @@ async function populateOrderSummary() {
             const typeSelect = document.getElementById("transactionType");
             if (typeSelect) {
                 typeSelect.value = "full";
-                if (typeof toggleInstallmentView === "function") {
-                    toggleInstallmentView("full");
-                }
+                toggleInstallmentView("full");
             }
 
-            // Trigger sync calculation if POS installment exists
-            if (typeof calculateInstallment === "function") calculateInstallment();
+            calculateInstallment();
         } else {
             tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center font-bold text-red-500">Failed to load cart items.</td></tr>`;
         }
@@ -211,9 +210,6 @@ function calculateInstallment() {
 // 2. ADMIN ORDER REVIEW LOGIC
 // ==========================================
 
-/**
- * Opens the order review modal and fetches real-time data
- */
 async function openViewModal(orderId) {
     const modal = document.getElementById('viewModal');
     const wrapper = document.getElementById('modalWrapper');
@@ -281,7 +277,6 @@ async function openViewModal(orderId) {
         if (historySearch) {
             originalRequesterName = data.customer_name || '';
             historySearch.value = originalRequesterName;
-            // Trigger history fetch for this specific customer
             loadGlobalHistoryLog(originalRequesterName);
         } else {
             loadGlobalHistoryLog();
@@ -308,9 +303,11 @@ async function openViewModal(orderId) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         setTimeout(() => {
-            backdrop.classList.replace('opacity-0', 'opacity-100');
-            wrapper.classList.replace('scale-95', 'scale-100');
-            wrapper.classList.replace('opacity-0', 'opacity-100');
+            if (backdrop) backdrop.classList.replace('opacity-0', 'opacity-100');
+            if (wrapper) {
+                wrapper.classList.replace('scale-95', 'scale-100');
+                wrapper.classList.replace('opacity-0', 'opacity-100');
+            }
         }, 10);
 
     } catch (err) {
@@ -318,9 +315,6 @@ async function openViewModal(orderId) {
     }
 }
 
-/**
- * Handles Approval or Rejection submission
- */
 async function handleAction(type) {
     const notes = document.getElementById('admin-notes');
     const requestId = document.getElementById('modal-id').dataset.orderId;
@@ -336,9 +330,6 @@ async function handleAction(type) {
         return;
     }
 
-    // Removing redundant confirm alert as requested
-
-    // Set Loading State
     const originalApproveText = approveBtn ? approveBtn.innerText : 'Confirm & Approve';
     const originalRejectText = rejectBtn ? rejectBtn.innerText : 'Reject Order';
     
@@ -374,7 +365,6 @@ async function handleAction(type) {
             }, 300);
         } else {
             window.showCustomAlert?.(res.message || "Failed");
-            // Reset
             if (approveBtn) { approveBtn.disabled = false; approveBtn.innerText = originalApproveText; }
             if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.innerText = originalRejectText; }
         }
@@ -385,18 +375,12 @@ async function handleAction(type) {
     }
 }
 
-/**
- * Fetches global order history for the sidebar log
- * Can be filtered by search query
- */
 async function loadGlobalHistoryLog(search = '') {
     const container = document.getElementById('history-items-container');
     if (!container) return;
 
-    // Default to original requester if search is cleared
     const finalSearch = search.trim() === '' ? originalRequesterName : search;
 
-    // Show loading state
     if (!search && !originalRequesterName) {
         container.innerHTML = `<div class="py-10 text-center flex flex-col items-center gap-3">
             <div class="size-10 border-2 border-red-100 border-t-red-600 rounded-full animate-spin"></div>
@@ -415,7 +399,6 @@ async function loadGlobalHistoryLog(search = '') {
                 const status = (h.trans_status || 'Pending').toUpperCase();
                 const amount = parseFloat(h.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
                 
-                // Color mapping for status
                 const statusColors = {
                     'SUCCESS': 'bg-green-100 text-green-700 border-green-200',
                     'SUCCESSFUL': 'bg-green-100 text-green-700 border-green-200',
@@ -477,37 +460,15 @@ async function loadGlobalHistoryLog(search = '') {
     }
 }
 
-/**
- * Handle Autocomplete/Search for History Sidebar
- */
 let historySearchTimeout = null;
 function handleHistoryAutocomplete(input) {
     const query = input.value.trim();
-
     if (historySearchTimeout) clearTimeout(historySearchTimeout);
-    
-    // We update the UI in real-time as the user types
     historySearchTimeout = setTimeout(() => {
         loadGlobalHistoryLog(query);
     }, 300);
 }
 
-function selectHistoryCustomer(id, name) {
-    const input = document.getElementById('history-search');
-    const suggestions = document.getElementById('history-suggestions');
-    if (input) input.value = name;
-    if (suggestions) suggestions.classList.add('hidden');
-
-    if (id > 0) {
-        fetchCustomerOrderHistory(id, true);
-    } else {
-        fetchCustomerOrderHistory(name, false);
-    }
-}
-
-/**
- * Recalculates total based on discount inputs in Review Modal
- */
 function calculateFinalTotal() {
     const discountInput = document.getElementById('admin-discount');
     const totalDisplay = document.getElementById('modal-total');
@@ -534,12 +495,13 @@ function closeReviewModal() {
     const backdrop = document.getElementById('modalBackdrop');
     if (!wrapper) return;
 
-    backdrop.classList.replace('opacity-100', 'opacity-0');
+    if (backdrop) backdrop.classList.replace('opacity-100', 'opacity-0');
     wrapper.classList.replace('scale-100', 'scale-95');
     wrapper.classList.replace('opacity-100', 'opacity-0');
 
     setTimeout(() => {
-        document.getElementById('viewModal').classList.add('hidden');
+        const modal = document.getElementById('viewModal');
+        if (modal) modal.classList.add('hidden');
     }, 300);
 }
 
@@ -548,9 +510,7 @@ function closeReviewModal() {
 // ==========================================
 
 async function completeSale() {
-    // Reset change tracking since we're submitting
     window.formHasUnsavedChanges = false;
-
     const btn = document.getElementById("completeSaleBtn");
     if (!btn || btn.disabled) return;
 
@@ -579,12 +539,10 @@ async function completeSale() {
         window.showCustomAlert?.("Customer name is required.");
         return;
     }
-    // Validation: Name should not contain numbers
     if (/[0-9]/.test(payload.clientName)) {
         window.showCustomAlert?.("Customer name should not contain numbers.");
         return;
     }
-    // Validation: Contact Number (PH Format: 09XXXXXXXXX)
     if (!payload.clientContact || !/^09\d{9}$/.test(payload.clientContact)) {
         window.showCustomAlert?.("Please enter a valid 11-digit contact number (starting with 09).");
         return;
@@ -605,9 +563,7 @@ async function completeSale() {
             const res = await fetch("../include/inc.admin/admin.ctrl.php", { method: "POST", body: formData });
             const result = await res.json();
             if (result.success) {
-                // Close the main checkout modal first
                 closeProceedModal('reviewCartModal');
-                
                 setTimeout(() => {
                     window.showCustomSuccess?.(`Order #${result.order_id} recorded.`, () => window.location.reload());
                 }, 300);
@@ -624,9 +580,6 @@ async function completeSale() {
     }, "Complete Sale", "bg-red-600");
 }
 
-/**
- * Handle POS Customer selection from Search
- */
 function selectCustomer(c) {
     const suggestions = document.getElementById("customerSuggestions");
     const nameInput = document.getElementById("clientName");
@@ -641,7 +594,7 @@ function selectCustomer(c) {
     if (contactInput) contactInput.value = c.contact_no;
     if (typeSelect) {
         typeSelect.value = c.client_type;
-        if (typeof toggleGovFields === "function") toggleGovFields(c.client_type);
+        toggleGovFields(c.client_type);
     }
     if (govInput) govInput.value = c.gov_branch || "";
     if (historyName) historyName.innerText = c.name;
@@ -656,9 +609,6 @@ function selectCustomer(c) {
     fetchCustomerPOSHistory(c.id);
 }
 
-/**
- * Real-time Customer Search for Checkout Forms
- */
 let customerSearchTimeout = null;
 function handleCustomerSearch(query) {
     const suggestions = document.getElementById("customerSuggestions");
@@ -678,7 +628,7 @@ function handleCustomerSearch(query) {
                 suggestions.innerHTML = "";
                 data.customers.forEach((c) => {
                     const html = `
-                        <div onclick='selectCustomer(${JSON.stringify(c).replace(/'/g, "&apos;")})' 
+                        <div data-select-customer='${JSON.stringify(c).replace(/'/g, "&apos;")}' 
                              class="px-5 py-4 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors group">
                             <div class="flex justify-between items-center">
                                 <div>
@@ -785,19 +735,17 @@ async function submitOrderRequest() {
     try {
         const formData = new FormData();
         formData.append("action", "place_request");
-        formData.append("fname", clientName); // sr.ctrl expects fname/lname
+        formData.append("fname", clientName);
         formData.append("lname", "");
 
         const res = await fetch("../include/inc.showroom/sr.ctrl.php", { method: "POST", body: formData });
         const data = await res.json();
 
         if (data.success) {
-            // Close the checkout modal first
             closeProceedModal('reviewCartModal');
-            
             setTimeout(() => {
                 window.showCustomSuccess?.(`Order Request Submitted Successfully! PR Number: ${data.pr_no}`, () => {
-                    window.location.reload(); // Refresh to clear cart
+                    window.location.reload();
                 });
             }, 300);
         } else {
@@ -816,60 +764,14 @@ async function submitOrderRequest() {
     }
 }
 
-    // Handle initial tab if on home-page.php
-    document.addEventListener("DOMContentLoaded", () => {
-        if (window.location.pathname.includes("home-page.php")) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const activeTab = urlParams.get('tab') || '0';
-            if (typeof showTab === 'function') showTab(parseInt(activeTab));
-        }
-    });
-
-/**
- * Monitor Checkout Form for Unsaved Changes
- */
-document.addEventListener("DOMContentLoaded", () => {
-    const checkoutFields = [
-        "clientName", 
-        "clientContact", 
-        "adminDiscount", 
-        "paymentRef", 
-        "paymentRemarks", 
-        "govBranch", 
-        "deliveryAddress", 
-        "amountPaid",
-        "clientType",
-        "shippingMode",
-        "transactionType",
-        "paymentMethod"
-    ];
-    
-    checkoutFields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            const trackChange = () => {
-                window.formHasUnsavedChanges = true;
-            };
-            el.addEventListener("input", trackChange);
-            el.addEventListener("change", trackChange);
-        }
-    });
-});
-
-/**
- * Showroom Home Page: Tab switching with silent cart refresh
- */
 async function refreshAndShowTab(tabIndex) {
-    if (typeof showTab !== 'function') return;
+    if (typeof window.showTab !== 'function') return;
 
-    // 1. Instantly switch the UI tabs
-    showTab(tabIndex);
+    window.showTab(tabIndex);
     window.history.replaceState({}, "", window.location.pathname + "?tab=" + tabIndex);
 
-    // Update badge count
-    if (typeof updateCartBadgeCount === 'function') updateCartBadgeCount();
+    if (typeof window.updateCartBadgeCount === 'function') window.updateCartBadgeCount();
 
-    // 2. Refresh cart data if switching to tab 1
     if (tabIndex === 1) {
         try {
             const response = await fetch(window.location.pathname + "?tab=1");
@@ -887,3 +789,263 @@ async function refreshAndShowTab(tabIndex) {
         }
     }
 }
+
+async function handleAddToCart() {
+  const btn = document.querySelector('#addToCartModal button[data-handle-add-to-cart]');
+  const originalText = btn ? "Add to Cart" : "Add to Cart";
+
+  const variantId = modalState.selectedVariant;
+  const qtyInput = document.getElementById("cartQty");
+  const qty = parseInt(qtyInput ? qtyInput.value : 1);
+  const source = modalState.selectedLocation;
+  const stocks = modalState.stockMap[variantId];
+  const maxStock = source === "SR" ? stocks.sr : stocks.wh;
+
+  if (qty > maxStock)
+    return window.showCustomAlert?.("Cannot add more than available stock (" + maxStock + ").");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add("opacity-80", "cursor-not-allowed", "bg-gray-800");
+    btn.innerHTML = `<div class="flex items-center justify-center gap-3"><div class="pure-spinner"></div><span class="tracking-widest uppercase text-[11px]">Processing...</span></div>`;
+  }
+
+  const startTime = Date.now();
+  const url = (typeof window.CART_ENDPOINT !== "undefined" ? window.CART_ENDPOINT : "../include/inc.admin/admin.ctrl.php") + "?action=add_to_cart";
+  const formData = new FormData();
+  formData.append("variant_id", variantId);
+  formData.append("qty", qty);
+  formData.append("source", source);
+
+  try {
+    const res = await fetch(url, { method: "POST", body: formData });
+    const data = await res.json();
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 1000) await new Promise((r) => setTimeout(r, 1000 - elapsed));
+
+    if (data.success) {
+      window.closeModal("addToCartModal");
+      setTimeout(() => {
+          const productName = modalState.product ? modalState.product.name : "Product";
+          window.showToast?.(`${productName} successfully added to the cart`, "success");
+      }, 300);
+      populateOrderSummary();
+      if (typeof window.updateCartBadgeCount === "function") window.updateCartBadgeCount();
+    } else {
+      window.showCustomAlert?.(data.message || "Failed to add to cart.");
+    }
+  } catch (err) {
+    console.error(err);
+    window.showCustomAlert?.("A network error occurred.");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove("opacity-80", "cursor-not-allowed", "bg-gray-800");
+      btn.innerText = "Add to Cart";
+    }
+  }
+}
+
+async function updateCartItem(cartId, qty, maxStock = 99999) {
+  if (qty < 1) {
+    executeRemoveCartItem(cartId);
+    return;
+  }
+  if (qty > maxStock) {
+    window.showCustomAlert?.("Cannot exceed available stocks (" + maxStock + ").");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("action", "update_cart_qty");
+  formData.append("cart_id", cartId);
+  formData.append("qty", qty);
+
+  try {
+    const res = await fetch("../include/global.ctrl.php", { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof window.updateCartBadgeCount === "function") window.updateCartBadgeCount();
+      refreshAndShowTab(1);
+    } else {
+      window.showCustomAlert?.(data.message || "Failed to update item quantity.");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function executeRemoveCartItem(cartId) {
+  const formData = new FormData();
+  formData.append("action", "delete_cart_item");
+  formData.append("cart_id", cartId);
+
+  try {
+    const res = await fetch("../include/global.ctrl.php", { method: "POST", body: formData });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof window.updateCartBadgeCount === "function") window.updateCartBadgeCount();
+      refreshAndShowTab(1);
+    } else {
+      window.showCustomAlert?.(data.message || "Failed to remove item.");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ==========================================
+// CONSOLIDATED EVENT DELEGATION
+// ==========================================
+document.addEventListener('click', (e) => {
+    const target = e.target;
+
+    // Tab Switching
+    const tabBtn = target.closest('[data-refresh-tab]');
+    if (tabBtn) {
+        refreshAndShowTab(parseInt(tabBtn.getAttribute('data-refresh-tab')));
+        return;
+    }
+
+    // Modal Operations (Open/Close Review)
+    const openProceed = target.closest('[data-open-proceed-modal]');
+    if (openProceed) {
+        openProceedModal(openProceed.getAttribute('data-open-proceed-modal'));
+        return;
+    }
+    const closeProceed = target.closest('[data-close-proceed-modal]');
+    if (closeProceed) {
+        closeProceedModal(closeProceed.getAttribute('data-close-proceed-modal'));
+        return;
+    }
+
+    // Product Modal (Open with data)
+    const cardOpen = target.closest('[data-open-product-modal]');
+    if (cardOpen) {
+        window.openProductModal(cardOpen.getAttribute('data-open-product-modal'));
+        return;
+    }
+
+    // Add to Cart
+    if (target.closest('[data-handle-add-to-cart]')) {
+        handleAddToCart();
+        return;
+    }
+
+    // Cart Updates
+    const upBtn = target.closest('[data-update-cart-qty]');
+    if (upBtn) {
+        const [id, qty, max] = upBtn.getAttribute('data-update-cart-qty').split(',').map(v => parseInt(v));
+        updateCartItem(id, qty, max);
+        return;
+    }
+    const rmBtn = target.closest('[data-remove-cart-item]');
+    if (rmBtn) {
+        const id = parseInt(rmBtn.getAttribute('data-remove-cart-item'));
+        window.showCustomConfirm?.("Remove this item from your cart?", () => executeRemoveCartItem(id));
+        return;
+    }
+
+    // Order Actions
+    if (target.id === 'placeRequestBtn') {
+        submitOrderRequest();
+        return;
+    }
+    if (target.id === 'completeSaleBtn') {
+        completeSale();
+        return;
+    }
+    if (target.id === 'approveBtn') {
+        handleAction('approve');
+        return;
+    }
+    if (target.id === 'rejectBtn') {
+        handleAction('reject');
+        return;
+    }
+
+    // Customer Selection (POS Auto-complete)
+    const custBtn = target.closest('[data-select-customer]');
+    if (custBtn) {
+        selectCustomer(JSON.parse(custBtn.getAttribute('data-select-customer')));
+        return;
+    }
+});
+
+document.addEventListener('change', (e) => {
+    const target = e.target;
+
+    // Installment/Discount Toggles
+    if (target.id === 'transactionType') {
+        toggleInstallmentView(target.value);
+        return;
+    }
+    if (target.name === 'discount_type') {
+        toggleDiscountType();
+        return;
+    }
+
+    // Address/Shipping mode toggles
+    if (target.id === 'shippingMode') {
+        toggleAddress(target.value);
+        return;
+    }
+
+    // Client type toggle
+    if (target.id === 'clientType') {
+        toggleGovFields(target.value);
+        updateAdminSidebar(document.getElementById('clientName')?.value || '');
+        return;
+    }
+    
+    // Real-time calculation triggers
+    if (['interestRate', 'installmentTerm', 'amountPaid', 'adminDiscount'].includes(target.id)) {
+        calculateInstallment();
+        calculateFinalTotal();
+        return;
+    }
+});
+
+document.addEventListener('input', (e) => {
+    const target = e.target;
+
+    if (target.id === 'clientName') {
+        updateAdminSidebar(target.value);
+        handleCustomerSearch(target.value);
+        return;
+    }
+    if (target.id === 'history-search') {
+        handleHistoryAutocomplete(target);
+        return;
+    }
+    if (['interestRate', 'installmentTerm', 'amountPaid', 'adminDiscount'].includes(target.id)) {
+        calculateInstallment();
+        calculateFinalTotal();
+        return;
+    }
+    if (target.id === 'admin-discount') {
+        calculateFinalTotal();
+        return;
+    }
+});
+
+// Initial tab setup
+document.addEventListener("DOMContentLoaded", () => {
+    if (window.location.pathname.includes("home-page.php")) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab') || '0';
+        window.showTab(parseInt(activeTab));
+    }
+    
+    // Monitored Unsaved changes
+    const checkoutFields = ["clientName", "clientContact", "adminDiscount", "paymentRef", "paymentRemarks", "govBranch", "deliveryAddress", "amountPaid"];
+    checkoutFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("input", () => window.formHasUnsavedChanges = true);
+            el.addEventListener("change", () => window.formHasUnsavedChanges = true);
+        }
+    });
+
+    if (typeof calculateInstallment === 'function') calculateInstallment();
+});

@@ -124,8 +124,7 @@ if (isset($_SESSION['user_id'])) {
             </a>
 
             <!-- Logout -->
-            <a href="javascript:void(0)" onclick="toggleLogoutModal(true)"
-                class="flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
+            <a href="javascript:void(0)" class="logout-trigger flex items-center gap-2 border border-gray-300 px-4 h-9 rounded-lg hover:bg-red-50 hover:border-red-200 transition group">
                 <svg class="size-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
                 </svg>
@@ -247,7 +246,7 @@ if (isset($_SESSION['user_id'])) {
     </nav>
 
     <!-- Reports and analytics Main Section -->
-    <div class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
+    <div id="reports-container" data-reports="<?= htmlspecialchars(json_encode(['stockHealth' => $stockHealth, 'salesTrend' => $salesTrend]), ENT_QUOTES, 'UTF-8') ?>" class="flex flex-col items-center w-full max-w-7xl mx-auto px-6 pb-12">
         <div class="border border-gray-300 rounded-2xl p-6 md:p-12 w-full bg-white">
 
             <div>
@@ -285,7 +284,7 @@ if (isset($_SESSION['user_id'])) {
                 <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
                         <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest">Top Selling Variants</h3>
-                        <select id="topProductsFilter" onchange="fetchTopProducts()" class="text-xs font-bold text-gray-400 bg-transparent focus:outline-none cursor-pointer hover:text-red-500 transition-colors">
+                        <select id="topProductsFilter" class="text-xs font-bold text-gray-400 bg-transparent focus:outline-none cursor-pointer hover:text-red-500 transition-colors">
                             <option value="all">Overall</option>
                             <option value="this_month" selected>This month</option>
                             <option value="last_month">Last month</option>
@@ -339,18 +338,18 @@ if (isset($_SESSION['user_id'])) {
                         <div class="flex flex-wrap items-end gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
                             <div class="flex flex-col gap-1">
                                 <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">From</label>
-                                <input type="date" id="reportStartDate" onchange="fetchOrdersReport()" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
+                                <input type="date" id="reportStartDate" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
                             </div>
 
                             <div class="flex flex-col gap-1">
                                 <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">To</label>
-                                <input type="date" id="reportEndDate" onchange="fetchOrdersReport()" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
+                                <input type="date" id="reportEndDate" class="h-10 px-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-red-500 transition-all font-bold text-gray-700">
                             </div>
 
                             <div class="flex flex-col gap-1 min-w-[200px]">
                                 <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Filter</label>
                                 <div class="relative group">
-                                    <select id="combinedTxnFilter" onchange="fetchOrdersReport()" class="w-full h-10 appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-widest text-gray-700 outline-none focus:border-red-500 transition-all cursor-pointer">
+                                    <select id="combinedTxnFilter" class="w-full h-10 appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-widest text-gray-700 outline-none focus:border-red-500 transition-all cursor-pointer">
                                         <option value="All">All Clients</option>
                                         <option value="Government">Government</option>
                                         <option value="Private">Private</option>
@@ -364,7 +363,7 @@ if (isset($_SESSION['user_id'])) {
                             </div>
 
                             <div class="flex gap-2">
-                                <a href="javascript:void(0)" onclick="resetAdminFilters()" class="h-10 px-6 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95 flex items-center shadow-lg shadow-red-100">
+                                <a href="javascript:void(0)" id="resetAdminFiltersBtn" class="h-10 px-6 bg-red-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95 flex items-center shadow-lg shadow-red-100">
                                     Reset
                                 </a>
                             </div>
@@ -511,7 +510,7 @@ if (isset($_SESSION['user_id'])) {
                                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Itemized Transaction Record</p>
                             </div>
                         </div>
-                        <button onclick="closeTxnModal()" class="size-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                        <button id="closeTxnModalBtn" class="size-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors">
                             <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -580,416 +579,11 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-                // 1. Health Chart (Doughnut)
-                const healthCtx = document.getElementById('healthChart').getContext('2d');
-                new Chart(healthCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Healthy', 'Low', 'Out'],
-                        datasets: [{
-                            data: [
-                                <?= $stockHealth['healthy'] ?>,
-                                <?= $stockHealth['low_stock'] ?>,
-                                <?= $stockHealth['out_of_stock'] ?>
-                            ],
-                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                            borderWidth: 0,
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        cutout: '70%',
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        responsive: true,
-                        maintainAspectRatio: false
-                    }
-                });
 
-                // 2. Sales Chart (Line)
-                const salesCtx = document.getElementById('salesChart').getContext('2d');
-                window.salesChart = new Chart(salesCtx, {
-                    type: 'line',
-                    data: {
-                        labels: [<?= "'" . implode("','", array_column($salesTrend, 'month_name')) . "'" ?>],
-                        datasets: [{
-                            label: 'Revenue',
-                            data: [<?= implode(",", array_column($salesTrend, 'revenue')) ?>],
-                            borderColor: '#dc2626',
-                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#dc2626'
-                        }]
-                    },
-                    options: {
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: '#f3f4f6'
-                                },
-                                ticks: {
-                                    callback: value => '₱' + value.toLocaleString()
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        },
-                        responsive: true,
-                        maintainAspectRatio: false
-                    }
-                });
 
-                // --- ORDERS REPORT PROGRESSIVE LOGIC ---
-                let allOrdersData = [];
-                let currentStatus = 'All';
-                let displayLimit = 3;
-                let paginationThreshold = 5;
-                let currentPage = 1;
+    <!-- External Logic -->
+    <script src="../../public/assets/js/reports.js?v=<?= time() ?>" defer></script>
 
-                window.changeOrderStatusFilter = function(status) {
-                    fetchOrdersReport();
-                };
-
-                window.resetAdminFilters = function() {
-                    document.getElementById('reportStartDate').value = '';
-                    document.getElementById('reportEndDate').value = '';
-                    document.getElementById('combinedTxnFilter').value = 'All';
-                    fetchOrdersReport();
-                };
-
-                window.fetchOrdersReport = function() {
-                    const content = document.getElementById('ordersReportContent');
-                    const start = document.getElementById('reportStartDate').value;
-                    const end = document.getElementById('reportEndDate').value;
-                    const client = document.getElementById('combinedTxnFilter')?.value || 'All';
-
-                    content.innerHTML = `<tr><td colspan="8" class="py-20 text-center"><div class="flex flex-col items-center gap-2"><div class="size-8 border-4 border-gray-100 border-t-red-600 rounded-full animate-spin"></div><p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading transactions...</p></div></td></tr>`;
-
-                    fetch(`../include/inc.admin/admin.ctrl.php?action=get_report_sales&client=${client}&start=${start}&end=${end}`)
-                        .then(res => res.json())
-                        .then(response => {
-                            if (response.success) {
-                                allOrdersData = response.data;
-                                renderOrdersTable();
-                            }
-                        });
-
-                    if (typeof updateSalesTrendChart === 'function') updateSalesTrendChart();
-                    window.renderOrdersTable = function() {
-                            const content = document.getElementById('ordersReportContent');
-                            const footer = document.getElementById('orderTableFooter');
-
-                            if (allOrdersData.length === 0) {
-                                content.innerHTML = `<tr><td colspan="7" class="py-20 text-center"><p class="text-[11px] font-black text-gray-300 uppercase tracking-widest">No transaction records found</p></td></tr>`;
-                                footer.innerHTML = '';
-                                return;
-                            }
-
-                            // Determine display range
-                            let dataToShow = [];
-                            let total = allOrdersData.length;
-
-                            if (total > paginationThreshold && displayLimit === paginationThreshold) {
-                                let start = (currentPage - 1) * paginationThreshold;
-                                let end = start + paginationThreshold;
-                                dataToShow = allOrdersData.slice(start, end);
-                            } else {
-                                dataToShow = allOrdersData.slice(0, displayLimit);
-                            }
-
-                            // Render Table
-                            content.innerHTML = dataToShow.map(row => {
-                                const statusColors = {
-                                    'Approved': 'bg-green-100 text-green-700',
-                                    'Rejected': 'bg-red-100 text-red-700',
-                                    'Cancelled': 'bg-gray-100 text-gray-600',
-                                    'For Review': 'bg-amber-100 text-amber-700'
-                                };
-                                const color = statusColors[row.order_status] || 'bg-blue-100 text-blue-700';
-
-                                return `
-                        <tr class="hover:bg-red-50/30 transition group">
-                            <td class="px-8 py-5">
-                                <p class="font-mono text-[11px] text-gray-400 font-bold tracking-tighter leading-none mb-1">#TXN-${row.trans_id.toString().padStart(5, '0')}</p>
-                                <p class="text-[9px] font-black text-gray-900 border-l-2 border-red-500 pl-2 uppercase tracking-widest" title="OR Number">${row.or_number || 'NO-REF'}</p>
-                            </td>
-                            <td class="px-8 py-5 text-sm font-bold text-gray-700 leading-tight">
-                                ${new Date(row.transaction_date).toLocaleDateString()}<br>
-                                <span class="text-[9px] text-gray-400 font-medium font-mono">${new Date(row.transaction_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            </td>
-                            <td class="px-8 py-5 text-sm font-black text-gray-900 leading-tight">
-                                ${row.customer_name}
-                            </td>
-                            <td class="px-8 py-5 text-center">
-                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest whitespace-nowrap ${row.client_type === 'Government' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-500'}">
-                                    ${row.client_type || 'Private'}
-                                </span>
-                            </td>
-                            <td class="px-8 py-5 text-center">
-                                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest whitespace-nowrap ${row.plan === 'Installment' ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}">
-                                    ${row.plan === 'Installment' ? 'Installment' : 'Full Paid'}
-                                </span>
-                            </td>
-                            <td class="px-8 py-5 text-right font-black text-gray-900">₱${parseFloat(row.amount_paid).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                            <td class="px-8 py-5 text-center">
-                                ${(() => {
-                                    const s = (row.trans_status || '').toUpperCase();
-                                    const colors = {
-                                        'SUCCESS':  'bg-green-50 text-green-600 border-green-200',
-                                        'ONGOING':  'bg-orange-50 text-orange-600 border-orange-200',
-                                        'PENDING':  'bg-yellow-50 text-yellow-600 border-yellow-200',
-                                        'FAILED':   'bg-red-50 text-red-600 border-red-200',
-                                    };
-                                    const cls = colors[s] || 'bg-gray-50 text-gray-600 border-gray-200';
-                                    return `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}">${row.trans_status}</span>`;
-                                })()}
-                            </td>
-                            <td class="px-8 py-5 text-center">
-                                <button onclick="viewOrderDetails(${row.order_id})" class="size-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition shadow-sm border border-gray-100" title="View Parent Order Details">
-                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    }).join('');
-
-                    // Same footer logic...
-                    if (total > 3 && displayLimit === 3) {
-                        footer.innerHTML = `
-                        <button onclick="expandOrderTable()" class="flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest hover:text-red-600 transition group">
-                            Show All (${total})
-                            <svg class="size-4 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path d="M19 9l-7 7-7-7" stroke-width="3" />
-                            </svg>
-                        </button>`;
-                    } else if (displayLimit === paginationThreshold) {
-                        let totalPages = Math.ceil(total / paginationThreshold);
-                        let pagesHtml = '';
-                        for (let i = 1; i <= totalPages; i++) {
-                            pagesHtml += `<button onclick="goToOrderPage(${i})" class="size-8 rounded-lg text-xs font-black transition ${currentPage === i ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100'}">${i}</button>`;
-                        }
-                        footer.innerHTML = `
-                        <div class="flex flex-col items-center gap-4">
-                            <button onclick="showLessOrders()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition group flex items-center gap-2">
-                                <svg class="size-4 group-hover:-translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" stroke-width="3" /></svg>
-                                Show Less
-                            </button>
-                            <div class="flex items-center gap-2">${pagesHtml}</div>
-                        </div>`;
-            } else {
-
-                footer.innerHTML = '';
-            }
-        };
-
-        window.viewOrderDetails = function(orderId) {
-            const modal = document.getElementById('txnDetailModal');
-            const content = document.getElementById('modalItemsContent');
-            const summaryHeader = document.getElementById('modalSummaryHeader');
-            const financialHeader = document.getElementById('modalFinancialHeader');
-            const scheduleContent = document.getElementById('modalScheduleContent');
-            const scheduleWrapper = document.getElementById('modalScheduleWrapper');
-            const title = document.getElementById('modalTxnId');
-            const totalDisplay = document.getElementById('modalTotalAmount');
-
-            title.innerText = `Order #ORD-${orderId.toString().padStart(5, '0')}`;
-            summaryHeader.innerHTML = '<div class="col-span-full py-4 animate-pulse bg-gray-50 rounded-xl"></div>';
-            financialHeader.innerHTML = '<div class="col-span-full py-4 animate-pulse bg-gray-50 rounded-xl"></div>';
-            content.innerHTML = `<tr><td colspan="4" class="py-10 text-center"><div class="animate-spin size-6 border-4 border-gray-100 border-t-red-600 rounded-full mx-auto mb-2"></div><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Fetching data...</p></td></tr>`;
-
-            scheduleWrapper.classList.add('hidden');
-            modal.classList.remove('hidden');
-
-            fetch(`../include/inc.admin/admin.ctrl.php?action=get_order_details&order_id=${orderId}`)
-                .then(res => res.json())
-                .then(response => {
-                    if (response.success && response.summary) {
-                        const s = response.summary;
-
-                        // 1. Summary Badges
-                        summaryHeader.innerHTML = `
-                                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Customer</p>
-                                        <p class="text-xs font-black text-gray-900">${s.customer_name}</p>
-                                    </div>
-                                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
-                                        <p class="text-xs font-black text-gray-900">${s.contact_no || 'N/A'}</p>
-                                    </div>
-                                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">OR Number</p>
-                                        <p class="text-xs font-black text-red-600 uppercase">${s.or_number || 'N/A'}</p>
-                                    </div>
-                                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Payment Mode</p>
-                                        <p class="text-xs font-black text-gray-900 uppercase">${s.payment_mode || 'N/A'}</p>
-                                    </div>
-                                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Txn Date</p>
-                                        <p class="text-xs font-black text-gray-900 uppercase">${new Date(s.transaction_date).toLocaleDateString()}</p>
-                                    </div>
-                                `;
-
-                        // 2. Financial Overview
-                        const totalPaid = (response.schedule || []).reduce((acc, row) => acc + (row.status === 'Paid' ? parseFloat(row.amount_paid) : 0), 0) || parseFloat(s.total) - parseFloat(s.balance);
-
-                        financialHeader.innerHTML = `
-                                    <div>
-                                        <p class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Principal</p>
-                                        <p class="text-lg font-black text-red-600 leading-none">₱${parseFloat(s.total).toLocaleString()}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Interest</p>
-                                        <p class="text-lg font-black text-red-600 leading-none">${s.interest_rate || 0}%</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Total Payable</p>
-                                        <p class="text-lg font-black text-red-600 leading-none">₱${parseFloat(s.total_with_interest || s.total).toLocaleString()}</p>
-                                    </div>
-                                    <div class="border-l border-red-200 pl-6">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Paid</p>
-                                        <p class="text-lg font-black text-green-600 leading-none">₱${totalPaid.toLocaleString()}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Balance</p>
-                                        <p class="text-lg font-black ${parseFloat(s.balance) > 0 ? 'text-red-500' : 'text-green-500'} leading-none">₱${parseFloat(s.balance).toLocaleString()}</p>
-                                    </div>
-                                `;
-
-                        // 3. Items
-                        let itemsHtml = '';
-                        response.items.forEach(item => {
-                            const subtotal = item.quantity * item.price;
-                            itemsHtml += `
-                                        <tr class="text-[11px] font-bold">
-                                            <td class="px-5 py-4">
-                                                <p class="text-gray-900 uppercase tracking-tighter">${item.prod_name}</p>
-                                                <p class="text-[10px] text-gray-400 leading-none mt-1 uppercase">${item.variant}</p>
-                                            </td>
-                                            <td class="py-4 text-center text-gray-600">${item.quantity}</td>
-                                            <td class="py-4 text-right text-gray-400">₱${parseFloat(item.price).toLocaleString()}</td>
-                                            <td class="px-5 py-4 text-right text-gray-900 font-black">₱${subtotal.toLocaleString()}</td>
-                                        </tr>
-                                    `;
-                        });
-                        content.innerHTML = itemsHtml;
-                        totalDisplay.innerText = `₱${parseFloat(s.total_with_interest || s.total).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-
-                        // 4. Schedule (if Installment)
-                        if (s.payment_type === 'Installment' && response.schedule && response.schedule.length > 0) {
-                            scheduleWrapper.classList.remove('hidden');
-                            let scheduleHtml = '';
-                            response.schedule.forEach(row => {
-                                const statusCls = row.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
-                                scheduleHtml += `
-                                            <tr class="text-[10px] font-bold">
-                                                <td class="px-5 py-3">
-                                                    <span class="px-2 py-0.5 rounded-full uppercase tracking-widest text-[8px] font-black ${statusCls}">${row.status}</span>
-                                                </td>
-                                                <td class="py-3 text-gray-600">${row.due_date ? new Date(row.due_date).toLocaleDateString() : 'N/A'}</td>
-                                                <td class="py-3 text-right text-gray-900">₱${parseFloat(row.amount_paid).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                                                <td class="px-5 py-3 text-right text-gray-400 uppercase tracking-tighter">${row.remarks || '---'}</td>
-                                            </tr>
-                                        `;
-                            });
-                            scheduleContent.innerHTML = scheduleHtml;
-                        }
-                    }
-                });
-        };
-
-        window.closeTxnModal = function() {
-            document.getElementById('txnDetailModal').classList.add('hidden');
-        };
-
-        window.expandOrderTable = function() {
-            displayLimit = paginationThreshold;
-            renderOrdersTable();
-        };
-
-        window.showLessOrders = function() {
-            displayLimit = 3;
-            currentPage = 1;
-            renderOrdersTable();
-        };
-
-        window.goToOrderPage = function(page) {
-            currentPage = page;
-            renderOrdersTable();
-        };
-
-        window.updateSalesTrendChart = function() {
-            const start = document.getElementById('reportStartDate').value;
-            const end = document.getElementById('reportEndDate').value;
-
-            fetch(`../include/inc.admin/admin.ctrl.php?action=get_revenue_trend&start=${start}&end=${end}`)
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success && window.salesChart) {
-                        window.salesChart.data.labels = res.labels;
-                        window.salesChart.data.datasets[0].data = res.data;
-                        window.salesChart.update();
-                    }
-                });
-        };
-
-        window.fetchTopProducts = function() {
-            const period = document.getElementById('topProductsFilter').value;
-            const container = document.getElementById('topProductsContainer');
-
-            // Loading state
-            container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic">Updating...</div>`;
-
-            fetch(`../include/inc.admin/admin.ctrl.php?action=get_top_products&period=${period}`)
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success && res.data) {
-                        if (res.data.length === 0) {
-                            container.innerHTML = `<div class="col-span-3 py-10 text-center text-gray-400 text-xs italic uppercase">No data for this period</div>`;
-                            return;
-                        }
-                        container.innerHTML = res.data.map(tp => {
-                            const img = tp.variant_image || tp.default_image || 'default-placeholder.png';
-                            const path = "../../public/assets/img/furnitures/" + encodeURIComponent(img.trim());
-                            return `
-                                        <div class="group animate-in zoom-in duration-300">
-                                            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden border border-gray-100 group-hover:border-red-300 transition shadow-sm">
-                                                <img src="${path}" alt="${tp.name}" class="object-contain h-full w-full">
-                                            </div>
-                                            <p class="text-[10px] font-bold text-gray-700 truncate px-1">${tp.name}</p>
-                                            <p class="text-xs font-black text-blue-600 mt-1">${parseInt(tp.total_sold)} <span class="text-[9px] text-gray-400 uppercase">Sold</span></p>
-                                        </div>
-                                    `;
-                        }).join('');
-                    }
-                });
-        };
-        };
-
-        // Initial Load
-        fetchOrdersReport();
-        });
-    </script>
     <style>
         /* Premium Select Styling */
         select {
