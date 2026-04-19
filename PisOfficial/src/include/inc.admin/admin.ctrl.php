@@ -19,7 +19,15 @@ if (file_exists($configPath) && file_exists($dbhPath)) {
     require_once $dbhPath;
     $pdo = $pdo ?? $conn; // Standardizing to $pdo
 } else {
-    sendJsonResponse(['error' => 'Core files missing'], 500);
+    sendJsonResponse(['success' => false, 'message' => 'Core files missing'], 500);
+}
+
+// 2.5 Detection: If Content-Length is high but $_POST is empty, likely exceeded post_max_size
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0) {
+    sendJsonResponse([
+        'success' => false,
+        'message' => 'The uploaded data was too large for the server to process. Please try smaller images or contact support.'
+    ], 413);
 }
 
 if (file_exists($modelPath)) {
