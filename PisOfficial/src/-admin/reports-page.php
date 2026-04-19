@@ -758,59 +758,44 @@ if (isset($_SESSION['user_id'])) {
                                         'FAILED':   'bg-red-50 text-red-600 border-red-200',
                                     };
                                     const cls = colors[s] || 'bg-gray-50 text-gray-600 border-gray-200';
-                                    return ` < span class = "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}" > $ {
-                                    row.trans_status
-                                } < /span>`;
-                            })()
-                        } <
-                        /td> <
-                        td class = "px-8 py-5 text-center" >
-                        <
-                        button onclick = "viewOrderDetails(${row.order_id})"
-                    class = "size-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition shadow-sm border border-gray-100"
-                    title = "View Parent Order Details" >
-                        <
-                        svg class = "size-4"
-                    fill = "none"
-                    stroke = "currentColor"
-                    viewBox = "0 0 24 24" > < path stroke - linecap = "round"
-                    stroke - linejoin = "round"
-                    stroke - width = "2"
-                    d = "M15 12a3 3 0 11-6 0 3 3 0 016 0z" / > < path stroke - linecap = "round"
-                    stroke - linejoin = "round"
-                    stroke - width = "2"
-                    d = "M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" / > < /svg> <
-                        /button> <
-                        /td> <
-                        /tr>
+                                    return `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${cls}">${row.trans_status}</span>`;
+                                })()}
+                            </td>
+                            <td class="px-8 py-5 text-center">
+                                <button onclick="viewOrderDetails(${row.order_id})" class="size-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition shadow-sm border border-gray-100" title="View Parent Order Details">
+                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
                     `;
                     }).join('');
 
                     // Same footer logic...
                     if (total > 3 && displayLimit === 3) {
-                        footer.innerHTML = ` <
-                    button onclick = "expandOrderTable()"
-                    class = "flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest hover:text-red-600 transition group" >
-                    Show All($ {
-                            total
-                        }) <
-                        svg class = "size-4 group-hover:translate-y-0.5 transition"
-                    fill = "none"
-                    stroke = "currentColor"
-                    viewBox = "0 0 24 24" > < path d = "M19 9l-7 7-7-7"
-                    stroke - width = "3" / > < /svg> <
-                        /button>
-                    `;
+                        footer.innerHTML = `
+                        <button onclick="expandOrderTable()" class="flex items-center gap-2 text-[10px] font-black text-gray-900 uppercase tracking-widest hover:text-red-600 transition group">
+                            Show All (${total})
+                            <svg class="size-4 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 9l-7 7-7-7" stroke-width="3" />
+                            </svg>
+                        </button>`;
                     } else if (displayLimit === paginationThreshold) {
                         let totalPages = Math.ceil(total / paginationThreshold);
                         let pagesHtml = '';
                         for (let i = 1; i <= totalPages; i++) {
-                            pagesHtml += ` < button onclick = "goToOrderPage(${i})"
-                    class = "size-8 rounded-lg text-xs font-black transition ${currentPage === i ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100'}" > $ {
-                        i
-                    } < /button>`;
-                }
-                footer.innerHTML = `
+                            pagesHtml += `<button onclick="goToOrderPage(${i})" class="size-8 rounded-lg text-xs font-black transition ${currentPage === i ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-100'}">${i}</button>`;
+                        }
+                        footer.innerHTML = `
+                        <div class="flex flex-col items-center gap-4">
+                            <button onclick="showLessOrders()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition group flex items-center gap-2">
+                                <svg class="size-4 group-hover:-translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" stroke-width="3" /></svg>
+                                Show Less
+                            </button>
+                            <div class="flex items-center gap-2">${pagesHtml}</div>
+                        </div>`;
                         <div class="flex flex-col items-center gap-4">
                             <button onclick="showLessOrders()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition group flex items-center gap-2">
                                 <svg class="size-4 group-hover:-translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" stroke-width="3" /></svg>
