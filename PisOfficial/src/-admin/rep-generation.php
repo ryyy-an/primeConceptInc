@@ -282,7 +282,7 @@ function getInitials($name)
                         </form>
                     </div>
                     <div class="w-full overflow-hidden border border-gray-100 rounded-2xl shadow-sm bg-white font-sans text-gray-900 mt-2">
-                        <div class="overflow-x-auto overflow-y-scroll max-h-[300px] custom-scrollbar block">
+                        <div class="overflow-x-auto overflow-y-scroll max-h-[500px] custom-scrollbar block">
                             <table class="w-full text-md text-left text-gray-700 table-auto border-collapse">
                                 <thead class="sticky top-0 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-widest border-b border-gray-100 z-10">
                                     <tr>
@@ -401,7 +401,7 @@ function getInitials($name)
                         </div>
 
                         <div class="w-full overflow-hidden border border-gray-100 rounded-2xl shadow-sm bg-white font-sans text-gray-900 mt-2">
-                            <div class="overflow-x-auto overflow-y-scroll max-h-[300px] custom-scrollbar block">
+                            <div class="overflow-x-auto overflow-y-scroll max-h-[500px] custom-scrollbar block">
                                 <table class="w-full text-md text-left text-gray-700 table-auto border-collapse">
                                     <thead class="sticky top-0 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-widest border-b border-gray-100 z-10">
                                         <tr>
@@ -486,7 +486,7 @@ function getInitials($name)
                         </div>
 
                         <div class="w-full overflow-hidden border border-gray-100 rounded-2xl shadow-sm bg-white font-sans text-gray-900 mt-2">
-                            <div class="overflow-x-auto overflow-y-scroll max-h-[300px] custom-scrollbar block">
+                            <div class="overflow-x-auto overflow-y-scroll max-h-[500px] custom-scrollbar block">
                                 <table class="w-full text-md text-left text-gray-700 table-auto border-collapse">
                                     <thead class="sticky top-0 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-widest border-b border-gray-100 z-10">
                                         <tr>
@@ -574,7 +574,7 @@ function getInitials($name)
                     </div>
 
                     <div class="w-full overflow-hidden border border-gray-100 rounded-2xl shadow-sm bg-white font-sans text-gray-900 mt-2">
-                        <div class="overflow-x-auto overflow-y-scroll max-h-[300px] custom-scrollbar block">
+                        <div class="overflow-x-auto overflow-y-scroll max-h-[500px] custom-scrollbar block">
                             <table class="w-full text-md text-left text-gray-700 table-auto border-collapse">
                                 <thead class="sticky top-0 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-widest border-b border-gray-100 z-10">
                                     <tr>
@@ -647,7 +647,7 @@ function getInitials($name)
                     </div>
 
                     <div class="w-full overflow-hidden border border-gray-100 rounded-2xl shadow-sm bg-white font-sans text-gray-900 mt-2">
-                        <div class="overflow-x-auto overflow-y-scroll max-h-[300px] custom-scrollbar block">
+                        <div class="overflow-x-auto overflow-y-scroll max-h-[500px] custom-scrollbar block">
                             <table class="w-full text-md text-left text-gray-700 table-auto border-collapse">
                                 <thead class="sticky top-0 bg-gray-50 text-gray-400 text-[9px] font-bold uppercase tracking-widest border-b border-gray-100 z-10">
                                     <tr>
@@ -738,9 +738,11 @@ function getInitials($name)
             const savedLink = localStorage.getItem('activeReportLink');
             
             if (urlSection) {
+                // If URL says which section to show, find its link
                 let targetLinkId = '';
                 document.querySelectorAll('.report-link').forEach(l => {
-                    if(l.getAttribute('onclick').includes(urlSection)) {
+                    const onclickStr = l.getAttribute('onclick') || '';
+                    if(onclickStr.includes(urlSection)) {
                         targetLinkId = l.id;
                     }
                 });
@@ -750,12 +752,14 @@ function getInitials($name)
                     showReportSection('filedReportsSection', 'filedReportsLink');
                 }
             } else if (savedSection && savedLink) {
+                // Otherwise check local storage
                 showReportSection(savedSection, savedLink);
             } else {
+                // Defualt
                 showReportSection('filedReportsSection', 'filedReportsLink');
             }
         });
-    </script>>
+    </script>
 
 </body>
 

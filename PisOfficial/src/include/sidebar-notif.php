@@ -128,6 +128,9 @@
                         renderNotifications([]); // Instant UI feedback
                         updateBadge(0);
                         toggleClearModal(false);
+                        if (window.showToast) {
+                            window.showToast('All notifications cleared successfully', 'success');
+                        }
                     }
                 });
         };
@@ -230,7 +233,7 @@
                 btn.classList.add('relative');
                 badge = document.createElement('span');
                 badge.id = 'notifBadge';
-                badge.className = 'absolute top-0 right-0 transform translate-x-[90%] -translate-y-1/2 size-4 bg-red-600 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all animate-in zoom-in z-[100]';
+                badge.className = 'absolute top-0 right-0 transform translate-x-[90%] -translate-y-1/2 size-4 bg-red-600 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all animate-in zoom-in z-[10]';
                 btn.appendChild(badge);
             }
 
