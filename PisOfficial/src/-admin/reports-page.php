@@ -796,13 +796,6 @@ if (isset($_SESSION['user_id'])) {
                             </button>
                             <div class="flex items-center gap-2">${pagesHtml}</div>
                         </div>`;
-                        <div class="flex flex-col items-center gap-4">
-                            <button onclick="showLessOrders()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-600 transition group flex items-center gap-2">
-                                <svg class="size-4 group-hover:-translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7" stroke-width="3" /></svg>
-                                Show Less
-                            </button>
-                            <div class="flex items-center gap-2">${pagesHtml}</div>
-                        </div>`;
             } else {
 
                 footer.innerHTML = '';
