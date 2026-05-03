@@ -1017,20 +1017,50 @@ function get_monthly_sales_trend(PDO $pdo, ?string $start = null, ?string $end =
             $whereSql .= " AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
         }
 
-        $sql = "SELECT DATE_FORMAT(transaction_date, '%b %Y') as month_name, SUM(amount) as revenue 
+        $sql = "SELECT DATE_FORMAT(transaction_date, '%Y-%m') as sort_date, SUM(amount) as revenue 
                 FROM transactions 
                 $whereSql 
-                GROUP BY DATE_FORMAT(transaction_date, '%Y-%m'), month_name
-                ORDER BY MIN(transaction_date) ASC";
+                GROUP BY sort_date
+                ORDER BY sort_date ASC";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $dbData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (empty($data)) {
+        $revenueMap = [];
+        foreach ($dbData as $row) {
+            $revenueMap[$row['sort_date']] = (float)$row['revenue'];
+        }
+
+        $result = [];
+        
+        $startDate = new DateTime($start ?: date('Y-m-d', strtotime('-5 months')));
+        $endDate = new DateTime($end ?: date('Y-m-d'));
+        
+        if ($startDate > $endDate) {
+            $endDate = clone $startDate;
+        }
+
+        $current = clone $startDate;
+        $current->modify('first day of this month');
+        $endMonth = clone $endDate;
+        $endMonth->modify('first day of this month');
+
+        while ($current <= $endMonth) {
+            $dateStr = $current->format('Y-m');
+            $monthName = $current->format('M Y');
+            $result[] = [
+                'month_name' => $monthName,
+                'revenue' => $revenueMap[$dateStr] ?? 0
+            ];
+            $current->modify('+1 month');
+        }
+
+        if (empty($result)) {
             return [['month_name' => date('M Y'), 'revenue' => 0]];
         }
-        return $data;
+
+        return $result;
     } catch (Throwable $e) {
         error_log("Sales Trend Error: " . $e->getMessage());
         return [];

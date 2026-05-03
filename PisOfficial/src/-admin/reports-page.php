@@ -31,7 +31,7 @@ if (isset($_SESSION['user_id'])) {
     // Fetch Advanced Analytics Data
     $salesTrend = get_monthly_sales_trend($pdo);
     $stockHealth = get_inventory_health_stats($pdo);
-    $topProducts = get_top_performing_products($pdo, 5, 'this_month');
+    $topProducts = get_top_performing_products($pdo, 5, 'all');
     $categoryData = get_category_distribution($pdo);
     $revenueStats = get_revenue_stats($pdo);
     $srLogs       = get_sr_stock_logs($pdo, 3);
@@ -262,18 +262,22 @@ if (isset($_SESSION['user_id'])) {
                         <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest">Product Details</h3>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                        <div class="space-y-4">
+                        <div class="space-y-3 w-full pr-4">
                             <div class="flex justify-between items-center">
-                                <span class="text-red-500 font-bold text-sm">Low Stock Variants</span>
-                                <span class="text-2xl font-black text-gray-800"><?= $stockHealth['low_stock'] ?></span>
+                                <span class="text-red-500 font-bold text-sm">Out of Stock</span>
+                                <span class="text-xl font-black text-gray-800"><?= $stockHealth['out_of_stock'] ?></span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <span class="text-gray-500 font-medium text-sm">All Items</span>
-                                <span class="text-xl font-bold text-gray-700"><?= $totalProducts ?></span>
+                                <span class="text-orange-500 font-bold text-sm">Low Stock</span>
+                                <span class="text-xl font-black text-gray-800"><?= $stockHealth['low_stock'] ?></span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <span class="text-gray-500 font-medium text-sm">All Variants</span>
-                                <span class="text-xl font-bold text-gray-700"><?= $stockHealth['total_variants'] ?></span>
+                                <span class="text-green-500 font-bold text-sm">Healthy</span>
+                                <span class="text-xl font-black text-gray-800"><?= $stockHealth['healthy'] ?></span>
+                            </div>
+                            <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                                <span class="text-gray-500 font-medium text-xs">Total Variants</span>
+                                <span class="text-lg font-bold text-gray-700"><?= $stockHealth['total_variants'] ?></span>
                             </div>
                         </div>
                         <div class="flex flex-col items-center justify-center border-l border-gray-100 h-[150px]">
@@ -286,8 +290,8 @@ if (isset($_SESSION['user_id'])) {
                     <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-6">
                         <h3 class="font-bold text-gray-700 uppercase text-sm tracking-widest">Top Selling Variants</h3>
                         <select id="topProductsFilter" class="text-xs font-bold text-gray-400 bg-transparent focus:outline-none cursor-pointer hover:text-red-500 transition-colors">
-                            <option value="all">Overall</option>
-                            <option value="this_month" selected>This month</option>
+                            <option value="all" selected>Overall</option>
+                            <option value="this_month">This month</option>
                             <option value="last_month">Last month</option>
                         </select>
                     </div>
@@ -568,7 +572,13 @@ if (isset($_SESSION['user_id'])) {
                         </div>
                     </div>
 
-                    <div class="p-8 bg-gray-50 border-t border-gray-100 flex justify-end">
+                    <div class="p-8 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                        <button id="printTxnBtn" onclick="window.print()" class="flex items-center gap-2 h-10 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm">
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            Print Details
+                        </button>
                         <div class="text-right">
                             <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Transaction Payable</p>
                             <h3 id="modalTotalAmount" class="text-2xl font-black text-gray-900 leading-none tracking-tighter">₱0.00</h3>
@@ -591,6 +601,109 @@ if (isset($_SESSION['user_id'])) {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+        }
+
+        /* Print Styles for Receipt-Like Format */
+        @media print {
+            @page {
+                margin: 0; /* Minimal margins for thermal printers or centered A4 */
+            }
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            body * {
+                visibility: hidden;
+            }
+            #txnDetailModal, #txnDetailModal * {
+                visibility: visible;
+                color: black !important; /* Force monochrome for thermal/receipt */
+            }
+            #txnDetailModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                background: white !important;
+                padding: 0 !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: flex-start !important;
+            }
+            #txnDetailModal > div {
+                box-shadow: none !important;
+                border: none !important;
+                width: 350px !important; /* Narrow width like a receipt */
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 16px !important;
+            }
+            
+            /* Modal Header Adjustments */
+            #txnDetailModal .size-12 {
+                display: none !important; /* Hide icon */
+            }
+            #txnDetailModal .p-8 {
+                padding: 8px 0 !important; /* Reduce large paddings */
+                border-color: #000 !important;
+                background: transparent !important;
+            }
+
+            /* Stack grid items like a receipt */
+            #modalSummaryHeader, #modalFinancialHeader {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 4px !important;
+                border: none !important;
+                background: transparent !important;
+                padding: 8px 0 !important;
+            }
+            
+            #modalSummaryHeader > div, #modalFinancialHeader > div {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                border: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+                margin: 0 !important;
+            }
+
+            #modalSummaryHeader p, #modalFinancialHeader p {
+                font-size: 11px !important;
+                margin: 0 !important;
+            }
+
+            #modalItemsScroll {
+                max-height: none !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin-top: 10px !important;
+            }
+
+            /* Table compression */
+            table {
+                width: 100% !important;
+            }
+            table th {
+                border-bottom: 1px dashed #000 !important;
+            }
+            table th, table td {
+                padding: 4px 2px !important;
+                font-size: 10px !important;
+                background: transparent !important;
+            }
+            
+            /* Total section */
+            #modalTotalAmount {
+                font-size: 18px !important;
+            }
+
+            #closeTxnModalBtn, #printTxnBtn {
+                display: none !important;
+            }
         }
     </style>
 
